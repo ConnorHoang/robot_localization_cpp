@@ -173,6 +173,8 @@ void ParticleFilter::update_robot_pose()
   // first make sure that the particle weights are normalized
   normalize_particles();
 
+  // determine current pose as lowest weight (closest to real data)
+
   // TODO: assign the latest pose into self.robot_pose as a
   // geometry_msgs.Pose object just to get started we will fix the robot's
   // pose to always be at the origin
@@ -208,6 +210,7 @@ void ParticleFilter::update_particles_with_odom()
   }
 
   // TODO: modify particles using delta
+  // for each particle in particles, change in x by delta_x, y by delta_y, theta by delta_theta
 }
 
 void ParticleFilter::resample_particles()
@@ -215,12 +218,26 @@ void ParticleFilter::resample_particles()
   // make sure the distribution is normalized
   normalize_particles();
   // TODO: fill out the rest of the implementation
+  // select lowest celining(n_particles/20) particles based upon weight (remove all others). 
+  // Use same method as in particle creation to create weighted distribution of new particles around by how many you remove 
+  // (take position of paticle and transform with difference generated using random distribution)
 }
 
 void ParticleFilter::update_particles_with_laser(std::vector<float> r,
                                                  std::vector<float> theta)
 {
   // TODO: implement this
+
+  /*
+  get laser scan data
+  determine laser scan closest distance (cd_l) to object, that is above a threshold (ros can give this)
+  determine laser scan angle to closest object (theta_l)
+  determine each particle closest distance (cd_p)
+  determine each particle angle to closest distance (theta_p) <- actually just use the given one
+  weight = abs(sqrt((cd_l-cd_p)^2+(theta_l-theta_p)^2))
+  call normalize
+  */
+
   (void)r;
   (void)theta;
 }
@@ -237,8 +254,12 @@ void ParticleFilter::initialize_particle_cloud(
   if (!xy_theta.has_value())
   {
     xy_theta = transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
+    if (xy_theta= NULL) { // replcae NULL with a more reasonible thing to represent nothing
+      // TODO: create uniform particles across map
+    }
   }
-  // TODO: create particles
+
+  // TODO: create normal distribution of particles around this point
 
   normalize_particles(); // Maybe remove this since update_robot_pose also does this
   update_robot_pose();
@@ -247,6 +268,8 @@ void ParticleFilter::initialize_particle_cloud(
 void ParticleFilter::normalize_particles()
 {
   // TODO: implement this
+  // Sum of all weights divided by number of all particles
+  // for particle in particles, divide by average of weights
 }
 
 void ParticleFilter::publish_particles(rclcpp::Time timestamp)
