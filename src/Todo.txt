@@ -1,9 +1,9 @@
 Particle things to implement
-1. particle creation: ParticleFilter::initialize_particle_cloud
-2. particle normalization: ParticleFilter::normalize_particles
-3. update particles based on odom movement: ParticleFilter::update_particles_with_odem
-4. update particles based upon laser scan: ParticleFilter::update_particles_with_laser
-5. resample particles: ParticleFilter::resample_particles
+1. particle creation: ParticleFilter::initialize_particle_cloud - Connor
+2. particle normalization: ParticleFilter::normalize_particles - Franklin
+3. update particles based on odom movement: ParticleFilter::update_particles_with_odom - Franklin
+4. update particles based upon laser scan: ParticleFilter::update_particles_with_laser - Connor
+5. resample particles: ParticleFilter::resample_particles - Connor
 
-1. update robot pose: ParticleFilter::update_robot_pose
+1. update robot pose: ParticleFilter::update_robot_pose - Franklin
     rife for improvement
