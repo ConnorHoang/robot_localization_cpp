@@ -150,8 +150,7 @@ void ParticleFilter::run_loop()
   {
     // we have moved far enough to do an update!
     update_particles_with_odom(); // update based on odometry
-    update_particles_with_laser(r,
-                                theta); // update based on laser scan
+    update_particles_with_laser(r,theta); // update based on laser scan
     update_robot_pose();                // update robot's pose based on particles
     resample_particles();               // resample particles to focus on areas of
                                         // high density
@@ -241,7 +240,7 @@ void ParticleFilter::initialize_particle_cloud(
   }
   // TODO: create particles
 
-  normalize_particles();
+  normalize_particles(); // Maybe remove this since update_robot_pose also does this
   update_robot_pose();
 }
 
