@@ -170,23 +170,37 @@ bool ParticleFilter::moved_far_enough_to_update(std::vector<float> new_odom_xy_t
 
 void ParticleFilter::update_robot_pose()
 {
+
+  //TODO: Test this
+
   // first make sure that the particle weights are normalized
   normalize_particles();
 
-  // determine current pose as lowest weight (closest to real data)
+  // determine best current pose estimate as lowest weight particle(closest to real data)
+  int index_of_lowest_weight = 0;
+  float lowest_weight = particles[0]->w;
+  for (int i = 1; i < n_particles; i ++) {
+    if (particles[i]->w < lowest_weight) {
+      index_of_lowest_weight = 0;
+      lowest_weight = particles[i]->w;
+    }
+  }  
 
-  // TODO: assign the latest pose into self.robot_pose as a
-  // geometry_msgs.Pose object just to get started we will fix the robot's
-  // pose to always be at the origin
+  // assigns the latest pose estimate into self.robot_pose as a geometry_msgs.Pose object
   geometry_msgs::msg::Pose robot_pose;
-  if (odom_pose.has_value())
+  robot_pose.position.x = particles[index_of_lowest_weight]->x;
+  robot_pose.position.y = particles[index_of_lowest_weight]->y;
+  // might be wrong
+  robot_pose.orientation = quaternion_from_euler(particles[index_of_lowest_weight]->theta, 0.0, 0.0);
+  
+  if (odom_pose.has_value()) // then update robot pose
   {
     transform_helper_->fix_map_to_odom_transform(robot_pose,
                                                  odom_pose.value());
   }
   else
   {
-    // TODO: print something
+    std::cout<< "Pose in the odometry frame has not been set" <<std::endl;
   }
 }
 
@@ -209,8 +223,13 @@ void ParticleFilter::update_particles_with_odom()
     return;
   }
 
-  // TODO: modify particles using delta
+  // TODO: test this
   // for each particle in particles, change in x by delta_x, y by delta_y, theta by delta_theta
+  for (int i = 0; i < n_particles; i ++) {
+    particles[i]->x += delta_x;
+    particles[i]->y += delta_y;
+    particles[i]->theta += delta_theta;
+  }
 }
 
 void ParticleFilter::resample_particles()
@@ -267,9 +286,20 @@ void ParticleFilter::initialize_particle_cloud(
 
 void ParticleFilter::normalize_particles()
 {
-  // TODO: implement this
+  // TODO: test this
   // Sum of all weights divided by number of all particles
   // for particle in particles, divide by average of weights
+  float sum_weights = 0;
+  for (int i = 0; i < n_particles; i ++) {
+    sum_weights += particles[i]->w;
+  }
+  
+  float avg_weight = sum_weight / n_particles;
+  
+  for (int i = 0; i < n_particles; i ++) {
+    particles[i]->w /= avg_weight;
+  }
+  
 }
 
 void ParticleFilter::publish_particles(rclcpp::Time timestamp)
