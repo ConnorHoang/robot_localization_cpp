@@ -41,7 +41,7 @@ geometry_msgs::msg::Pose Particle::as_pose()
   return pose;
 }
 
-ParticleFilter::ParticleFilter() : Node("pf")
+ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
 {
   base_frame = "base_footprint"; // the frame of the robot base
   map_frame = "map";             // the name of the map coordinate frame
@@ -337,7 +337,7 @@ void ParticleFilter::normalize_particles()
   float avg_weight = sum_weight / n_particles;
   
   for (int i = 0; i < n_particles; i ++) {
-    particles[i]->w /= avg_weight;
+    particles[i]->w /= sum_weights; // changed from avg weight to total weight -> I'm 98% sure this is right
   }
   
 }
