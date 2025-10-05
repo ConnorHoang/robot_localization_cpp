@@ -182,6 +182,10 @@ private:
   rclcpp::TimerBase::SharedPtr timer;
   std::shared_ptr<OccupancyField> occupancy_field;
   std::shared_ptr<TFHelper> transform_helper_;
+
+  std::mt19937 random_generator_; // random number engine
+  std::uniform_real_distribution<float> uniform_distribution_; // distribution of randomness
+
 };
 
 #endif

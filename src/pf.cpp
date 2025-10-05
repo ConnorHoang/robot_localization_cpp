@@ -5,6 +5,7 @@
 #include <rclcpp/time.hpp>
 #include <string>
 #include <tuple>
+#include <random>
 
 #include "angle_helpers.hpp"
 #include "builtin_interfaces/msg/time.hpp"
@@ -88,6 +89,9 @@ ParticleFilter::ParticleFilter() : Node("pf")
   timer = this->create_wall_timer(
       std::chrono::milliseconds(50),
       std::bind(&ParticleFilter::pub_latest_transform, this));
+
+  std::random_device rd; // get random seed
+  random_generator_.seed(rd()); // use seed
 }
 
 void ParticleFilter::pub_latest_transform()
@@ -270,18 +274,54 @@ void ParticleFilter::update_initial_pose(geometry_msgs::msg::PoseWithCovarianceS
 void ParticleFilter::initialize_particle_cloud(
     std::optional<std::vector<float>> xy_theta)
 {
+  // where to initialize the particle cloud
   if (!xy_theta.has_value())
   {
+    // This is so you don't need to pass in the odom pose everytime.
     xy_theta = transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
-    if (xy_theta= NULL) { // replcae NULL with a more reasonible thing to represent nothing
-      // TODO: create uniform particles across map
-    }
   }
 
   // TODO: create normal distribution of particles around this point
+  particle_cloud.clear();
+  particle_cloud.reserve(this->n_particles);
+
+  for (size_t i = 0; i < this->n_particles; i++) {
+    this->particle_cloud.push_back(this->random_particle());
+  }
 
   normalize_particles(); // Maybe remove this since update_robot_pose also does this
   update_robot_pose();
+}
+
+ParticleFilter::random_particle() {
+  // return random particle
+  std::array<double, 4> bounds = occupancy_field->get_obstacle_bounding_box();
+  float lx = bounds[0];
+  float ux = bounds[1];
+  float ly = bounds[2];
+  float uy = bounds[3];    
+  
+  float width = ux - lx;
+  float height = uy - ly;
+
+  float x, y, theta;
+  float w = 1.0f / this->n_particles;
+
+  while (true) {
+    float random_val_1 = uniform_distribution_(random_generator_);
+    float random_val_2 = uniform_distribution_(random_generator_);
+    float random_val_3 = uniform_distribution_(random_generator_);
+    
+    x = lx + width * random_val_1;
+    y = ly + height * random_val_2;
+    theta = 2.0f * M_PI * random_val_3;
+
+    if (std::isfinite(occupancy_field->get_closest_obstacle_distance(x, y))) {
+      break;
+    }
+  }
+
+  return Particle(w, theta, x, y);
 }
 
 void ParticleFilter::normalize_particles()
