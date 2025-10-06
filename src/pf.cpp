@@ -210,8 +210,7 @@ void ParticleFilter::update_robot_pose()
 
 void ParticleFilter::update_particles_with_odom()
 {
-  auto new_odom_xy_theta =
-      transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
+  auto new_odom_xy_theta = transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
 
   // compute the change in x,y,theta since our last update
   if (current_odom_xy_theta.size() >= 3)
@@ -220,6 +219,13 @@ void ParticleFilter::update_particles_with_odom()
     auto delta_x = new_odom_xy_theta[0] - current_odom_xy_theta[0];
     auto delta_y = new_odom_xy_theta[1] - current_odom_xy_theta[1];
     auto delta_theta = new_odom_xy_theta[2] - current_odom_xy_theta[2];
+
+    // for each particle in particles, change in x by delta_x, y by delta_y, theta by delta_theta
+    for (int i = 0; i < n_particles; i ++) {
+      particle_cloud[i].x += delta_x;
+      particle_cloud[i].y += delta_y;
+      particle_cloud[i].theta += delta_theta;
+    }  
   }
   else
   {
@@ -228,12 +234,6 @@ void ParticleFilter::update_particles_with_odom()
   }
 
   // TODO: test this
-  // for each particle in particles, change in x by delta_x, y by delta_y, theta by delta_theta
-  for (int i = 0; i < n_particles; i ++) {
-    particles[i]->x += delta_x;
-    particles[i]->y += delta_y;
-    particles[i]->theta += delta_theta;
-  }
 }
 
 void ParticleFilter::resample_particles()
@@ -312,8 +312,7 @@ void ParticleFilter::resample_particles()
   particle_cloud.insert(particle_cloud.end(), new_particles.begin(), new_particles.end());
 }
 
-void ParticleFilter::update_particles_with_laser(std::vector<float> r,
-                                                 std::vector<float> theta)
+void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vector<float> theta)
 {
   // TODO: implement this
 
