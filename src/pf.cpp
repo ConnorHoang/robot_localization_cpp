@@ -241,9 +241,75 @@ void ParticleFilter::resample_particles()
   // make sure the distribution is normalized
   normalize_particles();
   // TODO: fill out the rest of the implementation
-  // select lowest celining(n_particles/20) particles based upon weight (remove all others). 
+  // select lowest ceiling(n_particles/20) particles based upon weight (remove all others). 
   // Use same method as in particle creation to create weighted distribution of new particles around by how many you remove 
-  // (take position of paticle and transform with difference generated using random distribution)
+  // (take position of paticle and transform with difference generated using random distribution) (add noise)
+
+  // Remove bottom 20% of existing particles
+  const double truncation_percentage = 0.20;
+  size_t num_to_remove = static_cast<size_t>(this->n_particles * truncation_percentage);
+  size_t num_to_keep = this->n_particles - num_to_remove;
+
+  // Sort particles by weight in ascending order (lowest weight first)
+  std::sort(particle_cloud.begin(), particle_cloud.end(),
+            [](const Particle& a, const Particle& b) {
+              return a.w < b.w;
+            });
+
+  // Remove the lowest-weighted particles from the vector
+  particle_cloud.erase(particle_cloud.begin(), particle_cloud.begin() + num_to_remove);
+
+
+  // Duplicate the highest-weighted particles
+  std::vector<Particle> new_particles;
+  new_particles.reserve(num_to_remove);
+
+  // Re-calculate the sum of weights for the surviving particles (the top 80%)
+  float survivor_weight_sum = 0.0f;
+  for (const auto& p : particle_cloud) {
+    survivor_weight_sum += p.w;
+  }
+
+   // Create noise generators
+  std::normal_distribution<float> x_noise(0.0, resample_noise_x_stddev_);
+  std::normal_distribution<float> y_noise(0.0, resample_noise_y_stddev_);
+  std::normal_distribution<float> theta_noise(0.0, resample_noise_theta_stddev_);
+
+  // Determine how many duplicates each survivor should generate
+  for (const auto& survivor : particle_cloud) {
+    // The number of new particles this survivor will spawn is proportional to its weight
+    // relative to the other survivors.
+    long num_duplicates = std::round((survivor.w / survivor_weight_sum) * num_to_remove);
+
+    for (long i = 0; i < num_duplicates; ++i) {
+      Particle new_particle = survivor; // Create a copy
+
+      // Add noise to the duplicated particles
+      new_particle.x += x_noise(random_generator_);
+      new_particle.y += y_noise(random_generator_);
+      new_particle.theta += theta_noise(random_generator_);
+      new_particle.theta = angles::normalize_angle(new_particle.theta);
+
+      new_particles.push_back(new_particle);
+    }
+  }
+
+  // Deal with missing particle
+  while (new_particles.size() < num_to_remove) {
+    // If we are short, duplicate the best particle (which is now at the end of the sorted vector)
+    Particle best_particle = particle_cloud.back();
+    best_particle.x += x_noise(random_generator_);
+    best_particle.y += y_noise(random_generator_);
+    best_particle.theta += theta_noise(random_generator_);
+    best_particle.theta = angles::normalize_angle(best_particle.theta);
+    new_particles.push_back(best_particle);
+  }
+  // Deal with extra particle
+  while (new_particles.size() > num_to_remove) {
+    new_particles.pop_back(); // If we have too many, remove the last-added ones
+  }
+
+  particle_cloud.insert(particle_cloud.end(), new_particles.begin(), new_particles.end());
 }
 
 void ParticleFilter::update_particles_with_laser(std::vector<float> r,
@@ -260,6 +326,61 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r,
   weight = abs(sqrt((cd_l-cd_p)^2+(theta_l-theta_p)^2))
   call normalize
   */
+
+  // Determine laser scan closest distance (cd_l) and angle (theta_l)
+  float cd_l = std::numeric_limits<float>::infinity();
+  float theta_l = 0.0f;
+  const float distance_threshold = 0.1f; // minimum distance threshold in meters
+  
+  for (size_t i = 0; i < r.size(); i++) {
+    // Only consider finite readings above threshold
+    if (std::isfinite(r[i]) && r[i] > distance_threshold) {
+      if (r[i] < cd_l) {
+        cd_l = r[i];
+        theta_l = theta[i];
+      }
+    }
+  }
+  
+  // If no valid closest distance found, skip update
+  if (!std::isfinite(cd_l)) {
+    return;
+  }
+  
+  // For each particle, determine closest distance (cd_p)
+  for (size_t p = 0; p < particle_cloud.size(); p++) {
+    Particle& particle = particle_cloud[p];
+    
+    // Use the same angle as the laser scan (theta_l)
+    float theta_p = theta_l;
+    
+    // Calculate the endpoint position in map frame for this particle
+    float ang = particle.theta + theta_p;
+    float endpoint_x = particle.x + cd_l * std::cos(ang);
+    float endpoint_y = particle.y + cd_l * std::sin(ang);
+    
+    // Get distance to closest obstacle from this endpoint (cd_p)
+    double cd_p = occupancy_field->get_closest_obstacle_distance(
+        endpoint_x, endpoint_y);
+    
+    // Calculate weight based on difference between laser and particle measurements
+    if (std::isfinite(cd_p)) {
+      // weight = 1 / abs(sqrt((cd_l - cd_p)^2 + (theta_l - theta_p)^2))
+      // theta_p = theta_l, the angle difference is 0
+      float distance_diff = cd_l - static_cast<float>(cd_p);
+      float deviation = std::abs(distance_diff);
+      
+      // Weight is inversely proportional to deviation
+      // Add small epsilon (yay discrete) to avoid division by zero
+      particle.w = 1.0f / (deviation + 0.001f);
+    } else {
+      // If no valid measurement, assign epsilon weight
+      particle.w = 0.0001f;
+    }
+  }
+  
+  // Normalize particle weights
+  normalize_particles();
 
   (void)r;
   (void)theta;
