@@ -116,8 +116,7 @@ void ParticleFilter::run_loop()
     return;
   }
   auto msg = scan_to_process.value();
-  std::tuple<std::optional<geometry_msgs::msg::Pose>,
-             std::optional<std::chrono::nanoseconds>>
+  std::tuple<std::optional<geometry_msgs::msg::Pose>, std::optional<std::chrono::nanoseconds>>
       matching_odom_pose = transform_helper_->get_matching_odom_pose(
           odom_frame, base_frame, msg.header.stamp);
   auto new_pose = std::get<0>(matching_odom_pose);
