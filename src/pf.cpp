@@ -455,9 +455,7 @@ void ParticleFilter::normalize_particles()
   for (int i = 0; i < n_particles; i ++) {
     sum_weights += particle_cloud[i].w;
   }
-  
-  float avg_weight = sum_weights / n_particles;
-  
+    
   for (int i = 0; i < n_particles; i ++) {
     particle_cloud[i].w /= sum_weights; // changed from avg weight to total weight -> I'm 98% sure this is right
   }
