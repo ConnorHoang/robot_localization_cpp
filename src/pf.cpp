@@ -18,6 +18,9 @@
 #include "pf.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
+
+#include "rclcpp/angles/angles.h"
+
 using std::placeholders::_1;
 
 
@@ -250,7 +253,7 @@ void ParticleFilter::resample_particles()
   // Remove bottom 20% of existing particles
   const double truncation_percentage = 0.20;
   size_t num_to_remove = static_cast<size_t>(this->n_particles * truncation_percentage);
-  size_t num_to_keep = this->n_particles - num_to_remove;
+  // size_t num_to_keep = this->n_particles - num_to_remove;
 
   // Sort particles by weight in ascending order (lowest weight first)
   std::sort(particle_cloud.begin(), particle_cloud.end(),
@@ -273,6 +276,9 @@ void ParticleFilter::resample_particles()
   }
 
    // Create noise generators
+  const float resample_noise_x_stddev_ = 3.0;
+  const float resample_noise_y_stddev_ = 3.0;
+  const float resample_noise_theta_stddev_ = 1.0;
   std::normal_distribution<float> x_noise(0.0, resample_noise_x_stddev_);
   std::normal_distribution<float> y_noise(0.0, resample_noise_y_stddev_);
   std::normal_distribution<float> theta_noise(0.0, resample_noise_theta_stddev_);
@@ -394,7 +400,7 @@ void ParticleFilter::update_initial_pose(geometry_msgs::msg::PoseWithCovarianceS
 }
 
 void ParticleFilter::initialize_particle_cloud(
-    std::optional<std::vector<float>> xy_theta = )
+    std::optional<std::vector<float>> xy_theta)
 {
   // where to initialize the particle cloud
   if (!xy_theta.has_value())
@@ -415,7 +421,7 @@ void ParticleFilter::initialize_particle_cloud(
   update_robot_pose();
 }
 
-auto ParticleFilter::random_particle() {
+Particle ParticleFilter::random_particle() {
   // return random particle
   std::array<double, 4> bounds = occupancy_field->get_obstacle_bounding_box();
   float lx = bounds[0];
@@ -473,7 +479,7 @@ void ParticleFilter::publish_particles(rclcpp::Time timestamp)
     nav2_msgs::msg::Particle converted;
     converted.weight = particle_cloud[i].w;
     converted.pose = particle_cloud[i].as_pose();
-    msg.particle_cloud.push_back(converted);
+    msg.particle_cloud.push_back(converted); //TODO: May be msg.particles
   }
 
   // actually send the message so that we can view it in rviz

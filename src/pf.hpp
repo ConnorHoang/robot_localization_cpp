@@ -163,6 +163,8 @@ private:
 
   void scan_received(sensor_msgs::msg::LaserScan msg);
 
+  Particle random_particle();
+
 private:
   std::string base_frame;
   std::string map_frame;
@@ -187,5 +189,6 @@ private:
   std::uniform_real_distribution<float> uniform_distribution_; // distribution of randomness
 
 };
+
 
 #endif
