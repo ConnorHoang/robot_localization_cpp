@@ -20,6 +20,9 @@
 #include "sensor_msgs/msg/laser_scan.hpp"
 using std::placeholders::_1;
 
+
+#include <optional>
+
 Particle::Particle(float w, float theta, float x, float y)
 {
   this->w = w;
@@ -182,20 +185,20 @@ void ParticleFilter::update_robot_pose()
 
   // determine best current pose estimate as lowest weight particle(closest to real data)
   int index_of_lowest_weight = 0;
-  float lowest_weight = particles[0]->w;
+  float lowest_weight = particle_cloud[0].w;
   for (int i = 1; i < n_particles; i ++) {
-    if (particles[i]->w < lowest_weight) {
+    if (particle_cloud[i].w < lowest_weight) {
       index_of_lowest_weight = 0;
-      lowest_weight = particles[i]->w;
+      lowest_weight = particle_cloud[i].w;
     }
   }  
 
   // assigns the latest pose estimate into self.robot_pose as a geometry_msgs.Pose object
   geometry_msgs::msg::Pose robot_pose;
-  robot_pose.position.x = particles[index_of_lowest_weight]->x;
-  robot_pose.position.y = particles[index_of_lowest_weight]->y;
+  robot_pose.position.x = particle_cloud[index_of_lowest_weight].x;
+  robot_pose.position.y = particle_cloud[index_of_lowest_weight].y;
   // might be wrong
-  robot_pose.orientation = quaternion_from_euler(particles[index_of_lowest_weight]->theta, 0.0, 0.0);
+  robot_pose.orientation = quaternion_from_euler(particle_cloud[index_of_lowest_weight].theta, 0.0, 0.0);
   
   if (odom_pose.has_value()) // then update robot pose
   {
@@ -392,7 +395,7 @@ void ParticleFilter::update_initial_pose(geometry_msgs::msg::PoseWithCovarianceS
 }
 
 void ParticleFilter::initialize_particle_cloud(
-    std::optional<std::vector<float>> xy_theta)
+    std::optional<std::vector<float>> xy_theta = )
 {
   // where to initialize the particle cloud
   if (!xy_theta.has_value())
@@ -413,7 +416,7 @@ void ParticleFilter::initialize_particle_cloud(
   update_robot_pose();
 }
 
-ParticleFilter::random_particle() {
+auto ParticleFilter::random_particle() {
   // return random particle
   std::array<double, 4> bounds = occupancy_field->get_obstacle_bounding_box();
   float lx = bounds[0];
@@ -451,13 +454,13 @@ void ParticleFilter::normalize_particles()
   // for particle in particles, divide by average of weights
   float sum_weights = 0;
   for (int i = 0; i < n_particles; i ++) {
-    sum_weights += particles[i]->w;
+    sum_weights += particle_cloud[i].w;
   }
   
-  float avg_weight = sum_weight / n_particles;
+  float avg_weight = sum_weights / n_particles;
   
   for (int i = 0; i < n_particles; i ++) {
-    particles[i]->w /= sum_weights; // changed from avg weight to total weight -> I'm 98% sure this is right
+    particle_cloud[i].w /= sum_weights; // changed from avg weight to total weight -> I'm 98% sure this is right
   }
   
 }
@@ -473,7 +476,7 @@ void ParticleFilter::publish_particles(rclcpp::Time timestamp)
     nav2_msgs::msg::Particle converted;
     converted.weight = particle_cloud[i].w;
     converted.pose = particle_cloud[i].as_pose();
-    msg.particles.push_back(converted);
+    msg.particle_cloud.push_back(converted);
   }
 
   // actually send the message so that we can view it in rviz
