@@ -7,6 +7,8 @@
 #include <tuple>
 #include <random>
 
+#include <angles/angles.h>
+
 #include "angle_helpers.hpp"
 #include "builtin_interfaces/msg/time.hpp"
 #include "geometry_msgs/msg/pose.hpp"
@@ -18,8 +20,6 @@
 #include "pf.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
-
-#include "rclcpp/angles/angles.h"
 
 using std::placeholders::_1;
 
@@ -413,7 +413,7 @@ void ParticleFilter::initialize_particle_cloud(
   particle_cloud.clear();
   particle_cloud.reserve(this->n_particles);
 
-  for (size_t i = 0; i < this->n_particles; i++) {
+  for (int i = 0; i < this->n_particles; i++) {
     this->particle_cloud.push_back(this->random_particle());
   }
 
@@ -479,7 +479,8 @@ void ParticleFilter::publish_particles(rclcpp::Time timestamp)
     nav2_msgs::msg::Particle converted;
     converted.weight = particle_cloud[i].w;
     converted.pose = particle_cloud[i].as_pose();
-    msg.particle_cloud.push_back(converted); //TODO: May be msg.particles
+    msg.particles.push_back(converted);
+//    msg.particle_cloud.push_back(converted); //given code, caused an error
   }
 
   // actually send the message so that we can view it in rviz
