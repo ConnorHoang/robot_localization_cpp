@@ -358,7 +358,7 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
   for (size_t p = 0; p < particle_cloud.size(); p++) {
     Particle& particle = particle_cloud[p];
     
-    // Use the same angle as the laser scan (theta_l)
+    // For particle, use the same angle as the laser scan (theta_l)
     float theta_p = theta_l;
     
     // Calculate the endpoint position in map frame for this particle
@@ -367,8 +367,7 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
     float endpoint_y = particle.y + cd_l * std::sin(ang);
     
     // Get distance to closest obstacle from this endpoint (cd_p)
-    double cd_p = occupancy_field->get_closest_obstacle_distance(
-        endpoint_x, endpoint_y);
+    double cd_p = occupancy_field->get_closest_obstacle_distance(endpoint_x, endpoint_y);
     
     // Calculate weight based on difference between laser and particle measurements
     if (std::isfinite(cd_p)) {
@@ -444,6 +443,7 @@ Particle ParticleFilter::random_particle() {
     y = ly + height * random_val_2;
     theta = 2.0f * M_PI * random_val_3;
 
+    // If inside object, bad particle
     if (std::isfinite(occupancy_field->get_closest_obstacle_distance(x, y))) {
       break;
     }
