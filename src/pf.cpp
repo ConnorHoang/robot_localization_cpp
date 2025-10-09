@@ -200,7 +200,7 @@ void ParticleFilter::update_robot_pose()
   robot_pose.position.x = particle_cloud[index_of_lowest_weight].x;
   robot_pose.position.y = particle_cloud[index_of_lowest_weight].y;
   // might be wrong
-  robot_pose.orientation = quaternion_from_euler(particle_cloud[index_of_lowest_weight].theta, 0.0, 0.0);
+  robot_pose.orientation = quaternion_from_euler(0.0,0.0,particle_cloud[index_of_lowest_weight].theta);
   
   if (odom_pose.has_value()) // then update robot pose
   {
@@ -276,9 +276,9 @@ void ParticleFilter::resample_particles()
   }
 
    // Create noise generators
-  const float resample_noise_x_stddev_ = 3.0;
-  const float resample_noise_y_stddev_ = 3.0;
-  const float resample_noise_theta_stddev_ = 1.0;
+  const float resample_noise_x_stddev_ = 0.1;
+  const float resample_noise_y_stddev_ = 0.1;
+  const float resample_noise_theta_stddev_ = 3.1;
   std::normal_distribution<float> x_noise(0.0, resample_noise_x_stddev_);
   std::normal_distribution<float> y_noise(0.0, resample_noise_y_stddev_);
   std::normal_distribution<float> theta_noise(0.0, resample_noise_theta_stddev_);
@@ -358,7 +358,7 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
   for (size_t p = 0; p < particle_cloud.size(); p++) {
     Particle& particle = particle_cloud[p];
     
-    // For particle, use the same angle as the laser scan (theta_l)
+    // Use the same angle as the laser scan (theta_l)
     float theta_p = theta_l;
     
     // Calculate the endpoint position in map frame for this particle
@@ -367,7 +367,8 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
     float endpoint_y = particle.y + cd_l * std::sin(ang);
     
     // Get distance to closest obstacle from this endpoint (cd_p)
-    double cd_p = occupancy_field->get_closest_obstacle_distance(endpoint_x, endpoint_y);
+    double cd_p = occupancy_field->get_closest_obstacle_distance(
+        endpoint_x, endpoint_y);
     
     // Calculate weight based on difference between laser and particle measurements
     if (std::isfinite(cd_p)) {
@@ -443,7 +444,6 @@ Particle ParticleFilter::random_particle() {
     y = ly + height * random_val_2;
     theta = 2.0f * M_PI * random_val_3;
 
-    // If inside object, bad particle
     if (std::isfinite(occupancy_field->get_closest_obstacle_distance(x, y))) {
       break;
     }
