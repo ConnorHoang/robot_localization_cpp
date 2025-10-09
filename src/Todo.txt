@@ -4,6 +4,7 @@ Particle things to implement
 3. update particles based on odom movement: ParticleFilter::update_particles_with_odom - Franklin
 4. update particles based upon laser scan: ParticleFilter::update_particles_with_laser - Connor
 5. resample particles: ParticleFilter::resample_particles - Connor
+6. random particle (helper to generate random particle): - Connor
 
 1. update robot pose: ParticleFilter::update_robot_pose - Franklin
     rife for improvement
