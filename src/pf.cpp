@@ -96,8 +96,8 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
       std::chrono::milliseconds(50),
       std::bind(&ParticleFilter::pub_latest_transform, this));
 
-  std::random_device rd; // get random seed
-  random_generator_.seed(rd()); // use seed
+  std::random_device rd; // get random initial number (seed)
+  random_generator_.seed(rd()); // use seed with random number generator
 }
 
 void ParticleFilter::pub_latest_transform()
