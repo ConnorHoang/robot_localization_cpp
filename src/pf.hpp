@@ -164,6 +164,15 @@ private:
   void scan_received(sensor_msgs::msg::LaserScan msg);
 
   Particle random_particle();
+  /**
+   * Generate a random particle within the bounds of the map, and not in an object
+   */
+
+  void check_particle_inbounds();
+  /**
+   * for each particle in particles, determine if in map bounds or in object. If NOT,
+   * do nothing, if YES, create new particle and return it.
+   */
 
 private:
   std::string base_frame;

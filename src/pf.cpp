@@ -239,6 +239,7 @@ void ParticleFilter::update_particles_with_odom()
   }
 
   // TODO: test this
+  check_particle_inbounds();
 }
 
 void ParticleFilter::resample_particles()
@@ -299,6 +300,7 @@ void ParticleFilter::resample_particles()
       new_particle.theta = angles::normalize_angle(new_particle.theta);
 
       new_particles.push_back(new_particle);
+      
     }
   }
 
@@ -318,6 +320,7 @@ void ParticleFilter::resample_particles()
   }
 
   particle_cloud.insert(particle_cloud.end(), new_particles.begin(), new_particles.end());
+  check_particle_inbounds();
 }
 
 void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vector<float> theta)
@@ -386,6 +389,7 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
     }
   }
   
+  check_particle_inbounds();
   // Normalize particle weights
   normalize_particles();
 
@@ -450,6 +454,21 @@ Particle ParticleFilter::random_particle() {
   }
 
   return Particle(w, theta, x, y);
+}
+
+void ParticleFilter::check_particle_inbounds() {
+  std::array<double, 4> bounds = occupancy_field->get_obstacle_bounding_box();
+  float lx = bounds[0];
+  float ux = bounds[1];
+  float ly = bounds[2];
+  float uy = bounds[3];    
+
+  for (Particle& p : particle_cloud) {
+    // check if particle i is in bounds
+    if (lx <= p.x || p.x <= ux || ly <= p.y || p.y <= uy) {
+      p = random_particle();
+    }
+  }
 }
 
 void ParticleFilter::normalize_particles()
