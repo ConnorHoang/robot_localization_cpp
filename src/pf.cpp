@@ -218,7 +218,7 @@ void ParticleFilter::update_particles_with_odom()
   auto new_odom_xy_theta = transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
 
   // compute the change in x,y,theta since our last update
-  if (current_odom_xy_theta.size() >= 3)
+  if (current_odom_xy_theta.size() >= 3) /// why >=3 vs ==3
   {
     auto old_odom_xy_theta = current_odom_xy_theta;
     auto delta_x = new_odom_xy_theta[0] - current_odom_xy_theta[0];
@@ -226,10 +226,10 @@ void ParticleFilter::update_particles_with_odom()
     auto delta_theta = new_odom_xy_theta[2] - current_odom_xy_theta[2];
 
     // for each particle in particles, change in x by delta_x, y by delta_y, theta by delta_theta
-    for (int i = 0; i < n_particles; i ++) {
-      particle_cloud[i].x += delta_x;
-      particle_cloud[i].y += delta_y;
-      particle_cloud[i].theta += delta_theta;
+    for (Particle& p : particle_cloud) {
+      p.x += delta_x;
+      p.y += delta_y;
+      p.theta += delta_theta;
     }  
   }
   else
@@ -239,7 +239,7 @@ void ParticleFilter::update_particles_with_odom()
   }
 
   // TODO: test this
-  check_particle_inbounds();
+  check_particles_inbounds();
 }
 
 void ParticleFilter::resample_particles()
@@ -320,7 +320,7 @@ void ParticleFilter::resample_particles()
   }
 
   particle_cloud.insert(particle_cloud.end(), new_particles.begin(), new_particles.end());
-  check_particle_inbounds();
+  check_particles_inbounds();
 }
 
 void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vector<float> theta)
@@ -389,7 +389,7 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
     }
   }
   
-  check_particle_inbounds();
+  check_particles_inbounds();
   // Normalize particle weights
   normalize_particles();
 
@@ -426,7 +426,6 @@ void ParticleFilter::initialize_particle_cloud(
 }
 
 Particle ParticleFilter::random_particle() {
-  // return random particle
   std::array<double, 4> bounds = occupancy_field->get_obstacle_bounding_box();
   float lx = bounds[0];
   float ux = bounds[1];
@@ -448,7 +447,10 @@ Particle ParticleFilter::random_particle() {
     y = ly + height * random_val_2;
     theta = 2.0f * M_PI * random_val_3;
 
-    if (std::isfinite(occupancy_field->get_closest_obstacle_distance(x, y))) {
+    // get closest distance to obstacle and check if valid distance (not infinite, not inside obstacle)
+    float dist = occupancy_field->get_closest_obstacle_distance(x, y);
+
+    if (std::isfinite(dist) && dist > 0.0) {
       break;
     }
   }
@@ -456,7 +458,7 @@ Particle ParticleFilter::random_particle() {
   return Particle(w, theta, x, y);
 }
 
-void ParticleFilter::check_particle_inbounds() {
+void ParticleFilter::check_particles_inbounds() {
   std::array<double, 4> bounds = occupancy_field->get_obstacle_bounding_box();
   float lx = bounds[0];
   float ux = bounds[1];
