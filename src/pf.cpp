@@ -190,7 +190,7 @@ void ParticleFilter::update_robot_pose()
   float lowest_weight = particle_cloud[0].w;
   for (int i = 1; i < n_particles; i ++) {
     if (particle_cloud[i].w < lowest_weight) {
-      index_of_lowest_weight = 0;
+      index_of_lowest_weight = i;
       lowest_weight = particle_cloud[i].w;
     }
   }  
@@ -358,8 +358,7 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
   }
   
   // For each particle, determine closest distance (cd_p)
-  for (size_t p = 0; p < particle_cloud.size(); p++) {
-    Particle& particle = particle_cloud[p];
+  for (Particle& particle : particle_cloud) {
     
     // Use the same angle as the laser scan (theta_l)
     float theta_p = theta_l;
@@ -373,6 +372,8 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
     double cd_p = occupancy_field->get_closest_obstacle_distance(
         endpoint_x, endpoint_y);
     
+    /// Calculate theta?
+
     // Calculate weight based on difference between laser and particle measurements
     if (std::isfinite(cd_p)) {
       // weight = 1 / abs(sqrt((cd_l - cd_p)^2 + (theta_l - theta_p)^2))
