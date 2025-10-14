@@ -199,6 +199,11 @@ void ParticleFilter::update_robot_pose()
   geometry_msgs::msg::Pose robot_pose;
   robot_pose.position.x = particle_cloud[index_of_lowest_weight].x;
   robot_pose.position.y = particle_cloud[index_of_lowest_weight].y;
+  
+  // test thing
+  // robot_pose.position.x = 0.0;
+  // robot_pose.position.y = 0.0;
+  
   // might be wrong
   robot_pose.orientation = quaternion_from_euler(0.0,0.0,particle_cloud[index_of_lowest_weight].theta);
   
@@ -230,7 +235,14 @@ void ParticleFilter::update_particles_with_odom()
       p.x += delta_x;
       p.y += delta_y;
       p.theta += delta_theta;
-    }  
+    }
+
+    // surely this works
+    // For some reason I think the starter code didn't reset the odom distance
+    // after deciding the odom distance was far enough to update the particles
+    // so I'm doing that here
+    current_odom_xy_theta = new_odom_xy_theta;
+ 
   }
   else
   {
@@ -254,6 +266,7 @@ void ParticleFilter::resample_particles()
   // Remove bottom 20% of existing particles
   const double truncation_percentage = 0.20;
   size_t num_to_remove = static_cast<size_t>(this->n_particles * truncation_percentage);
+  // num_to_remove = 1;
   // size_t num_to_keep = this->n_particles - num_to_remove;
 
   // Sort particles by weight in ascending order (lowest weight first)
@@ -470,6 +483,8 @@ void ParticleFilter::check_particles_inbounds() {
     // check if particle i is in bounds
     if (lx <= p.x || p.x <= ux || ly <= p.y || p.y <= uy) {
       p = random_particle();
+      // test
+      // p = Particle(1.0f/this->n_particles, 0.0f, 0.0f, 0.0f);
     }
   }
 }
