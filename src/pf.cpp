@@ -453,6 +453,7 @@ Particle ParticleFilter::random_particle() {
   float w = 1.0f / this->n_particles;
 
   while (true) {
+    // use uniform distribution across entire map
     float random_val_1 = uniform_distribution_(random_generator_);
     float random_val_2 = uniform_distribution_(random_generator_);
     float random_val_3 = uniform_distribution_(random_generator_);
