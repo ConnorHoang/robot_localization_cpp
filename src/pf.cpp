@@ -1,3 +1,4 @@
+#include <cstddef>
 #define _USE_MATH_DEFINES
 
 #include <cmath>
@@ -61,6 +62,9 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
       M_PI / 6; // the amount of angular movement before performing an update
 
   // TODO: define additional constants if needed
+  // Previous pose estimate for getting angle
+  // geometry_msgs::msg::Pose old_robot_pose;
+  set_old_pose = false;
 
   // pose_listener responds to selection of a new approximate robot
   // location (for instance using rviz)
@@ -186,10 +190,11 @@ void ParticleFilter::update_robot_pose()
   normalize_particles();
 
   // determine best current pose estimate as lowest weight particle(closest to real data)
+  // UPDATE: oops, it was supposed to be the highest weight, not renamed yet
   int index_of_lowest_weight = 0;
   float lowest_weight = particle_cloud[0].w;
   for (int i = 1; i < n_particles; i ++) {
-    if (particle_cloud[i].w < lowest_weight) {
+    if (particle_cloud[i].w > lowest_weight) {
       index_of_lowest_weight = i;
       lowest_weight = particle_cloud[i].w;
     }
@@ -197,15 +202,35 @@ void ParticleFilter::update_robot_pose()
 
   // assigns the latest pose estimate into self.robot_pose as a geometry_msgs.Pose object
   geometry_msgs::msg::Pose robot_pose;
+  /*
   robot_pose.position.x = particle_cloud[index_of_lowest_weight].x;
   robot_pose.position.y = particle_cloud[index_of_lowest_weight].y;
   
   // test thing
-  // robot_pose.position.x = 0.0;
-  // robot_pose.position.y = 0.0;
+  robot_pose.position.x = 0.0;
+  robot_pose.position.y = 0.0;
   
   // might be wrong
   robot_pose.orientation = quaternion_from_euler(0.0,0.0,particle_cloud[index_of_lowest_weight].theta);
+  */
+  // ignore the stuff above this
+  // UPDATE: this does the exact same as the code above
+  robot_pose = particle_cloud[index_of_lowest_weight].as_pose();
+
+// UPDATE: math here is likely wrong
+// Set estimated angle to be angle between old and new estimated position
+  if (set_old_pose){
+  float diffy = robot_pose.position.y - old_robot_pose.position.y;
+  float diffx = robot_pose.position.x - old_robot_pose.position.x;
+  float estimated_angle = std::atan2(diffy, diffx);
+  float old_delta_angle = euler_from_quaternion(old_robot_pose.orientation)[2];
+  // robot_pose.orientation = quaternion_from_euler(0.0,0.0,estimated_angle + old_delta_angle);
+  }
+  else {
+  set_old_pose = true;  
+  }
+  old_robot_pose = robot_pose;
+  
   
   if (odom_pose.has_value()) // then update robot pose
   {
@@ -232,6 +257,11 @@ void ParticleFilter::update_particles_with_odom()
 
     // for each particle in particles, change in x by delta_x, y by delta_y, theta by delta_theta
     for (Particle& p : particle_cloud) {
+      // UPDATE: the commented code is from the code on discord and does not work
+      // for some reason. 
+      // float transform_theta = p.theta + 0.0*current_odom_xy_theta[2];
+      // p.x += delta_x * std::cos(transform_theta) - delta_y * std::sin(transform_theta);
+      // p.y += delta_x * std::sin(transform_theta) + delta_y * std::cos(transform_theta);
       p.x += delta_x;
       p.y += delta_y;
       p.theta += delta_theta;
@@ -241,7 +271,7 @@ void ParticleFilter::update_particles_with_odom()
     // For some reason I think the starter code didn't reset the odom distance
     // after deciding the odom distance was far enough to update the particles
     // so I'm doing that here
-    current_odom_xy_theta = new_odom_xy_theta;
+     current_odom_xy_theta = new_odom_xy_theta;
  
   }
   else
@@ -292,7 +322,7 @@ void ParticleFilter::resample_particles()
    // Create noise generators
   const float resample_noise_x_stddev_ = 0.1;
   const float resample_noise_y_stddev_ = 0.1;
-  const float resample_noise_theta_stddev_ = 3.1;
+  const float resample_noise_theta_stddev_ = 0.1*M_PI;
   std::normal_distribution<float> x_noise(0.0, resample_noise_x_stddev_);
   std::normal_distribution<float> y_noise(0.0, resample_noise_y_stddev_);
   std::normal_distribution<float> theta_noise(0.0, resample_noise_theta_stddev_);
