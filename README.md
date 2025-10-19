@@ -2,8 +2,9 @@
 CompRobo 2025 - Connor Hoang, Franklin Noble
 
 ## Overview
-This particle filter project serves as an introduction to localization and ___.
+The goal of this project is to create a localization method for the neato robot, provided a map of the space is given.
 
+To do this, we implemented a working particle filter using a Markov chain to effectively discretize a probability field and ultimately converge on the robots position.
 ### Overall Code Structure
 <!--Which files, explain c++...-->
 #### Particle Filter Logic
