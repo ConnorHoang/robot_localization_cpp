@@ -510,9 +510,13 @@ void ParticleFilter::check_particles_inbounds() {
   float ly = bounds[2];
   float uy = bounds[3];    
 
+  if (lx > ux) std::swap(lx, ux);
+  if (ly > uy) std::swap(ly, uy);
+
   for (Particle& p : particle_cloud) {
     // check if particle i is in bounds
-    if (lx <= p.x || p.x <= ux || ly <= p.y || p.y <= uy) {
+//    if (lx <= p.x || p.x <= ux || ly <= p.y || p.y <= uy) {
+    if (p.x < lx || p.x > ux || p.y < ly || p.y > uy) {
       p = random_particle();
       // test
       // p = Particle(1.0f/this->n_particles, 0.0f, 0.0f, 0.0f);
