@@ -36,7 +36,7 @@ This function is straightforward -- it divides the weight of each particle by th
 #### Resample Particles
 Sort the particles in the particle cloud by weight and remove the lowest 25%. Replace 20% of the original particles as duplicates of the continuing particles with random noise, where continuing particles with higher weights have proportionally more particles assigned to them. Generate the remaining particles completely randomly. 
 #### Calculate Pose
-
+The estimated robot pose is calculated by finding the particle with the best weight, and then updating the transform between the map and odom frame to make the assumption that this particle's location and heading are the robot's position and heading. 
 #### 
 
 <!-- image of steps taken in run loop -->
@@ -53,8 +53,6 @@ Another challenge we faced was working with outside code we did not write. While
 One of the biggest limitations we found was that the provided implementation of an occupancy field did not provide the angle to the nearest obstacle, meaning that our particles struggled to converge on the robot's orientation. Future work could explore a more robust angle calculation that makes fewer assumptions, either through an improved occupancy field implementation or using new methods. 
 
 Although our choice to use C++ provided us with runtime optimization, our implementation leaves a lot of room for speed improvements. Right now, the filtering steps run just fast enough to localize the robot in real time -- this is good enough for small maps like the one we used, but localization on larger maps would likely need more particles to avoid dangers like particle death. Speed optimizations would let us use more particles, more resampling, and potentially even additional methods of evaluating particle likelihoods.
-
-### Attribution of Work
 
 ### Additional Documentation
 <!-- say where bag files are attached here-->
