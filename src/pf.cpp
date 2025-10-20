@@ -368,16 +368,16 @@ void ParticleFilter::resample_particles()
 
 void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vector<float> theta)
 {
-  // TODO: implement this
-
   /*
-  get laser scan data
-  determine laser scan closest distance (cd_l) to object, that is above a threshold (ros can give this)
-  determine laser scan angle to closest object (theta_l)
-  determine each particle closest distance (cd_p)
-  determine each particle angle to closest distance (theta_p) <- actually just use the given one
-  weight = abs(sqrt((cd_l-cd_p)^2+(theta_l-theta_p)^2))
-  call normalize
+  - get laser scan data
+  - determine laser scan closest distance (cd_l) to real robot, that is above a threshold (and store the corresponding angle as theta_l)
+
+  - project this closest distance (robot_cd_l) at corresponding angle (theta_l) from each particle
+  - find closest distance from projection to obstacle (using helper)
+  - the closer that returned distance is to 0, the higher the weight
+  
+  - check if inbounds
+  - call normalize
   */
 
   // Determine laser scan closest distance (cd_l) and angle (theta_l)
@@ -400,41 +400,30 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
     return;
   }
   
-  // For each particle, determine closest distance (cd_p)
+  // For each particle, determine weight
   for (Particle& particle : particle_cloud) {
     
-    // Use the same angle as the laser scan (theta_l)
-    float theta_p = theta_l;
-    
-    // Calculate the endpoint position in map frame for this particle
-    float ang = particle.theta + theta_p;
+    // Convert particle coords to polar
+    // Project cd_l at angle theta_l from the particle's position and orientation
+    float ang = particle.theta + theta_l;
     float endpoint_x = particle.x + cd_l * std::cos(ang);
     float endpoint_y = particle.y + cd_l * std::sin(ang);
     
-    // Get distance to closest obstacle from this endpoint (cd_p)
-    double cd_p = occupancy_field->get_closest_obstacle_distance(
-        endpoint_x, endpoint_y);
+    // Get distance to closest obstacle on the map from this projected point (cd_proj)
+    double cd_proj = occupancy_field->get_closest_obstacle_distance(endpoint_x, endpoint_y);
     
-    /// Calculate theta?
-
     // Calculate weight based on difference between laser and particle measurements
-    if (std::isfinite(cd_p)) {
-      // weight = 1 / abs(sqrt((cd_l - cd_p)^2 + (theta_l - theta_p)^2))
-      // theta_p = theta_l, the angle difference is 0
-      float distance_diff = cd_l - static_cast<float>(cd_p);
-      float deviation = std::abs(distance_diff);
-      
-      // Weight is inversely proportional to deviation
-      // Add small epsilon (yay discrete) to avoid division by zero
-      particle.w = 1.0f / (deviation + 0.001f);
+    if (std::isfinite(cd_proj)) {
+      double sigma = 1.0;
+      particle.w = std::exp(-(cd_proj * cd_proj) / (2.0 * sigma * sigma));
     } else {
-      // If no valid measurement, assign epsilon weight
+      // If measurement is invalid, assign epsilon to avoid x/0
       particle.w = 0.0001f;
     }
   }
   
+  // Affirm particles are in valid places and normalize weights
   check_particles_inbounds();
-  // Normalize particle weights
   normalize_particles();
 
   (void)r;
