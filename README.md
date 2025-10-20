@@ -4,7 +4,7 @@ CompRobo 2025 - Connor Hoang, Franklin Noble
 ### Overview
 The goal of this project is to create a localization method for the neato robot, provided a map of the space that is accurate using only information from a lidar and odometry.
 
-To do this, we implemented a particle filter with a Markov chain assumption to effectively discretize a probability field and ultimately converge on the robots position.
+To do this, we implemented a particle filter in C++ using ROS2 middleware to effectively discretize a probability field and ultimately converge on the robots position.
 
 Our final 
 ### Overall Code Structure
@@ -16,12 +16,26 @@ Our primary particle filter logic is held in pf.cpp and the corresponding header
 
 Within pf.cpp, we had a class called ParticleFilter which contained the fundamental operations for the particle filter implementation. 
 
-<!--  -->
-
 ### Particle Filter Logic 
 <!--appraoch-->
 <!--Explain conceptual logic behind how a particle filter works-->
-Stepping thorugh our main loop, ___.
+Shown in Figure _ is the particle filter logic.
+
+<!-- block diagram of pf logic--> 
+
+#### Initialize Particles
+Finds the bounding box of the map and generates random particles within those bounds in valid locations until _(the desired number of particles is reached)__.
+#### Update Particles with Odom
+
+#### Update Particles with laser (LIDAR)
+The function parses the lidar data to determine the closest distance to an object. __mention threashould and infinite?__ Then the function determines for each particle in the particle cloud checks the closest distance to an obstacle at the same angle of the true lidar data. 
+#### Normalize Particles
+
+#### Resample Particles
+
+#### Calculate Pose
+
+#### 
 
 <!-- image of steps taken in run loop -->
 
@@ -35,7 +49,6 @@ Another challenge we faced was working with outside code we did not write. While
 
 ### Next Steps
 Future work could explore a more robust angle calculation that makes fewer assumptions, ___.
-### Attribution of Work
 
 ### Additional Documentation
 <!-- say where bag files are attached here-->
