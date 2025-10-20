@@ -15,9 +15,12 @@ Our primary particle filter logic is held in pf.cpp and the corresponding header
 When specifically requested by the user, the robot should listen to velocity commands passed by keypresses on the terminal running the code. This helps drive the robot to a desired location when testing autonomous mode, exiting the `bump` state if the bump sensor is triggered, or for any other reason in which manual control of the robot would be useful.
 
 ### Challenges and Takeaways
-One notable challenge has been adapting to C++, particuarly in a ROS enviorment. We both have previous experience with C++ in firmware or otherwise, ____. Most of the learnings here were from syntax and fundamental knowledge of how C++ works, especially as opposed to Python.
+One notable challenge has been adapting to C++, particuarly in a ROS enviorment. We both had some previous experience with C++ in firmware or otherwise, but we came into this project unfamiliar with some of the more complex elements of the language, such as pointers and the abstraction techniques that ROS uses. Most of the learnings here were from syntax and fundamental knowledge of how C++ works, especially as opposed to Python.  
 
-Another challenge we faced was working with outside code we did not write. While relying on this code was incrediably useful, due to time contraints we were unable to fully understand every aspect of the provided code, and hence remained unconfident in modifying code, even when we encountered seemingly undesired behavior. As part of a workaround for this, we either made assumptions and verified them using vizualization or wrote code in our section that asserted our viewpoint of what the outside code is returning had to be true.
+Another challenge we faced was working with outside code we did not write. While relying on this code was incrediably useful, due to time contraints we were unable to fully understand every aspect of the provided code, and hence remained unconfident in modifying code, even when we encountered seemingly undesired behavior. As part of a workaround for this, we either made assumptions and verified them using vizualization or wrote code in our section that accounted for incorrect assumptions during runtime. 
+
+
+
 
 ### Next Steps
 Future work could explore a more robust angle calculation that makes fewer assumptions, ___.
