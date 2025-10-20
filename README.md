@@ -1,28 +1,26 @@
 # Particle Filter Localization
 CompRobo 2025 - Connor Hoang, Franklin Noble
 
-## Overview
+### Overview
 The goal of this project is to create a localization method for the neato robot, provided a map of the space is given.
 
-To do this, we implemented a working particle filter using a Markov chain to effectively discretize a probability field and ultimately converge on the robots position.
+To do this, we implemented a particle filter with a Markov chain assumption to effectively discretize a probability field and ultimately converge on the robots position.
 ### Overall Code Structure
 <!--(design decisions)-->
 <!--Which files, explain c++...-->
-#### Particle Filter Logic 
+Our primary particle filter logic is held in pf.cpp and the corresponding header file pf.hp. We also have angle_helpers, helper_functions, and occupancy_field as files with functionality we use in __. 
+### Particle Filter Logic 
 <!--appraoch-->
 <!--Explain conceptual logic behind how a particle filter works-->
 When specifically requested by the user, the robot should listen to velocity commands passed by keypresses on the terminal running the code. This helps drive the robot to a desired location when testing autonomous mode, exiting the `bump` state if the bump sensor is triggered, or for any other reason in which manual control of the robot would be useful.
 
-## Conclusion
+### Challenges and Takeaways
+One notable challenge has been adapting to C++, particuarly in a ROS enviorment. We both have previous experience with C++ in firmware or otherwise, ____. Most of the learnings here were from syntax and fundamental knowledge of how C++ works, especially as opposed to Python.
 
-### Takeaways
-<!--(lessons learned)-->
-
-### Challenges
-One major challenge has been adapting to C++, particuarly in a ROS enviorment. We both have previous experience with C++ in firmware or otherwise, ____.
+Another challenge we faced was working with outside code we did not write. While relying on this code was incrediably useful, due to time contraints we were unable to fully understand every aspect of the provided code, and hence remained unconfident in modifying code, even when we encountered seemingly undesired behavior. As part of a workaround for this, we either made assumptions and verified them using vizualization or wrote code in our section that asserted our viewpoint of what the outside code is returning had to be true.
 
 ### Next Steps
-
+Future work could explore a more robust angle calculation that makes fewer assumptions, ___.
 ### Attribution of Work
 
 ### Additional Documentation
