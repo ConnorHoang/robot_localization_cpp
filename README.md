@@ -26,11 +26,11 @@ Shown in Figure _ is the particle filter logic.
 #### Initialize Particles
 Finds the bounding box of the map and generates random particles within those bounds in valid locations until _(the desired number of particles is reached)__.
 #### Update Particles with Odom
-
+This function finds the change in the robot's position since it was last updated. It then adds these changes in position to each particle as if each particle was the robot's position and orientation.  
 #### Update Particles with laser (LIDAR)
 The function parses the lidar data to determine the closest distance to an object. __mention threashould and infinite?__ Then the function determines for each particle in the particle cloud checks the closest distance to an obstacle at the same angle of the true lidar data. 
 #### Normalize Particles
-
+This function is straightforward -- it divides the weight of each particle by the total weight of all particles, so that all the weights add up to one.
 #### Resample Particles
 
 #### Calculate Pose
