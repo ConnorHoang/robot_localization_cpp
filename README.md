@@ -8,13 +8,15 @@ To do this, we implemented a particle filter in C++ using ROS2 middleware to eff
 
 Our final 
 ### Overall Code Structure
-<!--(design decisions)-->
+<!--(design decisions), system architecture-->
 <!--Which files, explain c++...-->
 Our primary particle filter logic is held in pf.cpp and the corresponding header file pf.hpp. We also have angle_helpers, helper_functions, and occupancy_field as files with functionality we use in pf.cpp related to their name.
 
 <!-- insert here figure of pubs and subs -->
 
 Within pf.cpp, we had a class called ParticleFilter which contained the fundamental operations for the particle filter implementation. 
+
+<!-- image of steps taken in run loop (the flow)-->
 
 ### Particle Filter Logic 
 <!--appraoch-->
@@ -28,11 +30,11 @@ Finds the bounding box of the map and generates random particles within those bo
 #### Update Particles with Odom
 This function finds the change in the robot's position since it was last updated. It then adds these changes in position to each particle as if each particle was the robot's position and orientation.  
 #### Update Particles with laser (LIDAR)
-The function parses the lidar data to determine the closest distance to an object. __mention threashould and infinite?__ Then the function determines for each particle in the particle cloud checks the closest distance to an obstacle at the same angle of the true lidar data. 
+The function parses the lidar data to determine the closest distance to an object. __mention threashould and infinite?__ Then the function determines for each particle in the particle cloud checks the closest distance to an obstacle at the same angle of the true lidar data. The difference between the true distance and each particle's difference is used to assign a weight, thereby updating the robot's most likely position.
 #### Normalize Particles
 This function is straightforward -- it divides the weight of each particle by the total weight of all particles, so that all the weights add up to one.
 #### Resample Particles
-
+Sort the particles in the particle cloud by weight and remove the lowest 25%. Replace 20% of the original particles as duplicates of the continuing particles with random noise, where continuing particles with higher weights have proportionally more particles assigned to them. Generate the remaining particles completely randomly. 
 #### Calculate Pose
 
 #### 
@@ -49,9 +51,30 @@ Another challenge we faced was working with outside code we did not write. While
 
 ### Next Steps
 One of the biggest limitations we found was that the provided implementation of an occupancy field did not provide the angle to the nearest obstacle, meaning that our particles struggled to converge on the robot's orientation. Future work could explore a more robust angle calculation that makes fewer assumptions, either through an improved occupancy field implementation or using new methods. 
+
 Although our choice to use C++ provided us with runtime optimization, our implementation leaves a lot of room for speed improvements. Right now, the filtering steps run just fast enough to localize the robot in real time -- this is good enough for small maps like the one we used, but localization on larger maps would likely need more particles to avoid dangers like particle death. Speed optimizations would let us use more particles, more resampling, and potentially even additional methods of evaluating particle likelihoods.
 
 ### Attribution of Work
 
 ### Additional Documentation
 <!-- say where bag files are attached here-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
