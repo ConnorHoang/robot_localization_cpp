@@ -189,16 +189,29 @@ void ParticleFilter::update_robot_pose()
   // first make sure that the particle weights are normalized
   normalize_particles();
 
+
   // determine best current pose estimate as lowest weight particle(closest to real data)
   // UPDATE: oops, it was supposed to be the highest weight, not renamed yet
   int index_of_lowest_weight = 0;
   float lowest_weight = particle_cloud[0].w;
+  /*
   for (int i = 1; i < n_particles; i ++) {
     if (particle_cloud[i].w > lowest_weight) {
       index_of_lowest_weight = i;
       lowest_weight = particle_cloud[i].w;
     }
-  }  
+  }
+*/
+
+  
+
+  // Sort particles by weight in ascending order (lowest weight first)
+  std::sort(particle_cloud.begin(), particle_cloud.end(),
+            [](const Particle& a, const Particle& b) {
+              return a.w < b.w;
+            });
+  index_of_lowest_weight = n_particles - 1;
+  lowest_weight = particle_cloud[n_particles - 1].w;
 
   // assigns the latest pose estimate into self.robot_pose as a geometry_msgs.Pose object
   geometry_msgs::msg::Pose robot_pose;
@@ -222,14 +235,26 @@ void ParticleFilter::update_robot_pose()
   if (set_old_pose){
   float diffy = robot_pose.position.y - old_robot_pose.position.y;
   float diffx = robot_pose.position.x - old_robot_pose.position.x;
-  float estimated_angle = std::atan2(diffy, diffx);
+  float estimated_angle = std::atan2(diffy, diffx); // + 0.5 * M_PI;
   float old_delta_angle = euler_from_quaternion(old_robot_pose.orientation)[2];
   // robot_pose.orientation = quaternion_from_euler(0.0,0.0,estimated_angle + old_delta_angle);
   }
   else {
   set_old_pose = true;  
   }
+
+  // set ending to be mean angle of highest particles
+ int n_particles_mean = 0;
+ float count_angles = 0;
+  for (int i = 4 * n_particles / 5; i < n_particles; i ++) {
+    n_particles_mean ++;
+    count_angles += particle_cloud[0].theta;
+  }
+  robot_pose.orientation = quaternion_from_euler(0.0,0.0,count_angles/n_particles_mean);
+  
   old_robot_pose = robot_pose;
+
+  
   
   
   if (odom_pose.has_value()) // then update robot pose
@@ -294,17 +319,13 @@ void ParticleFilter::resample_particles()
   // (take position of paticle and transform with difference generated using random distribution) (add noise)
 
   // Remove bottom 20% of existing particles
-  const double truncation_percentage = 0.20;
+  const double truncation_percentage = 0.25;
   size_t num_to_remove = static_cast<size_t>(this->n_particles * truncation_percentage);
   // num_to_remove = 1;
   // size_t num_to_keep = this->n_particles - num_to_remove;
 
-  // Sort particles by weight in ascending order (lowest weight first)
-  std::sort(particle_cloud.begin(), particle_cloud.end(),
-            [](const Particle& a, const Particle& b) {
-              return a.w < b.w;
-            });
-
+  // particles are sorted with lowest weight first in update_robot_pose
+  
   // Remove the lowest-weighted particles from the vector
   particle_cloud.erase(particle_cloud.begin(), particle_cloud.begin() + num_to_remove);
 
@@ -492,10 +513,14 @@ Particle ParticleFilter::random_particle() {
     y = ly + height * random_val_2;
     theta = 2.0f * M_PI * random_val_3;
 
+    // works for the building map
+    // x = -20 * width * random_val_1;
+    // y = 40 * height * random_val_2;
+
     // get closest distance to obstacle and check if valid distance (not infinite, not inside obstacle)
     float dist = occupancy_field->get_closest_obstacle_distance(x, y);
 
-    if (std::isfinite(dist) && dist > 0.0) {
+    if (std::isfinite(dist) && dist != 0.0) {
       break;
     }
   }
@@ -504,6 +529,7 @@ Particle ParticleFilter::random_particle() {
 }
 
 void ParticleFilter::check_particles_inbounds() {
+  return; 
   std::array<double, 4> bounds = occupancy_field->get_obstacle_bounding_box();
   float lx = bounds[0];
   float ux = bounds[1];
@@ -512,7 +538,7 @@ void ParticleFilter::check_particles_inbounds() {
 
   for (Particle& p : particle_cloud) {
     // check if particle i is in bounds
-    if (lx <= p.x || p.x <= ux || ly <= p.y || p.y <= uy) {
+    if (lx >= p.x || p.x >= ux || ly >= p.y || p.y >= uy) {
       p = random_particle();
       // test
       // p = Particle(1.0f/this->n_particles, 0.0f, 0.0f, 0.0f);
