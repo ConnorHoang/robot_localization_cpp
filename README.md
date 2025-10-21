@@ -51,7 +51,7 @@ Another challenge we faced was working with outside code we did not write. While
 
 
 ### Next Steps
-Overall, our particle filter is able to converge on the correct location, but it does have some limitations in regards to accuracy. Future progress could explore the different parameters available to us and find optimal values for them. We could explore slightly different methods of resampling, for example, by generating a small number of completely random particles, or reducing added noise as a function of how certain we are about our guesses.  
+In out current simulated setup, our particle filter converges on the correct location, but it does have accuracy and precision limitations. Future progress could explore tuning the different parameters available to us to find optimal values. It could also explore slightly different methods of weighting such as incorporating more directions of LIDAR data, or adding random noise to the odometry particle updates.
 
 While our choice to use C++ provided us with runtime optimization, our implementation still leaves a lot of room for speed improvements. Right now, the filtering steps run just fast enough to localize the robot in real time -- this is good enough for small maps like the one we used, but localization on larger maps would likely need more particles to avoid dangers like particle death. Speed optimizations would let us use more particles, more resampling, and potentially even additional methods of evaluating particle likelihoods.
 
