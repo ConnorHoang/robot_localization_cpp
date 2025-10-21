@@ -202,6 +202,9 @@ private:
   double resample_noise_y_stddev_;
   double resample_noise_theta_stddev_;
 
+  // MAC testing flag
+  bool MAC_testing;
+
   rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
   rclcpp::Publisher<nav2_msgs::msg::ParticleCloud>::SharedPtr particle_pub;
   std::optional<builtin_interfaces::msg::Time> last_scan_timestamp;

@@ -50,6 +50,8 @@ geometry_msgs::msg::Pose Particle::as_pose()
 
 ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
 {
+  MAC_testing = false; // set to true to override map bounds for MAC testing
+  
   base_frame = "base_footprint"; // the frame of the robot base
   map_frame = "map";             // the name of the map coordinate frame
   odom_frame = "odom";           // the name of the odometry coordinate frame
@@ -290,7 +292,6 @@ void ParticleFilter::resample_particles()
   // Calculate particle group counts
   size_t num_to_truncate = static_cast<size_t>(this->n_particles * truncation_percentage);
   size_t num_random = static_cast<size_t>(this->n_particles * random_percentage);
-  size_t num_duplicates_to_add = num_to_truncate - num_random;
   size_t num_to_remove = static_cast<size_t>(this->n_particles * truncation_percentage);
 
   // Sort particles by weight in ascending order (lowest weight first)
@@ -471,11 +472,14 @@ Particle ParticleFilter::random_particle() {
 
   /**
    * For MAC testing purposes, override bounds to known map size
+   * Verify if these are right values
    */
-  // lx = 0.0;
-  // ux = 530.0;
-  // ly = 0.0;
-  // uy = 1433.0;
+  if (MAC_testing) {
+    lx = -530.0;
+    ux = 0.0;
+    ly = -1433.0;
+    uy = 0.0;
+  }
   
   float width = ux - lx;
   float height = uy - ly;
@@ -510,6 +514,17 @@ void ParticleFilter::check_particles_inbounds() {
   float ux = bounds[1];
   float ly = bounds[2];
   float uy = bounds[3];    
+
+  /**
+   * For MAC testing purposes, override bounds to known map size
+   * Verify if these are right values
+   */
+  if (MAC_testing) {
+    lx = -530.0;
+    ux = 0.0;
+    ly = -1433.0;
+    uy = 0.0;
+  }
 
   if (lx > ux) std::swap(lx, ux);
   if (ly > uy) std::swap(ly, uy);
