@@ -2,11 +2,10 @@
 CompRobo 2025 - Connor Hoang, Franklin Noble
 
 ### Overview
-The goal of this project is to create a localization method for the neato robot, provided a map of the space that is accurate using only information from a lidar and odometry.
+The goal of this project was to create a localization algorithm using only LIDAR and odometry, when provided an accurate map of the space, to determine a pose estimate of a robot's position.
 
-To do this, we implemented a particle filter in C++ using ROS2 middleware to effectively discretize a probability field and ultimately converge on the robots position.
+To do this, we implemented a particle filter in C++ using ROS2 middleware. We were ultiamtely able to create a particle filter that converges reasonably well.
 
-Our final 
 ### Overall Code Structure
 <!--(design decisions), system architecture-->
 <!--Which files, explain c++...-->
