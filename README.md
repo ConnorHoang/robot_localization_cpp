@@ -37,6 +37,8 @@ This divides the weight of each particle by the total weight of all particles, s
 Sort the particles in the particle cloud by weight and remove a set percentage of the lowest weighted particles (default 25%). Replace some percentage (default 20%) of the original particles as duplicates of the surviving particles with random noise, where surviving particles with higher weights have proportionally more particles assigned to them. Generate the remaining particles randomly as a means to mitigate dangers of particle death.
 #### Calculate Pose
 The robot's pose is estimated by calculating the weighted average of all particles in the particle cloud. The final x and y coordinates are the weighted mean of the particles' positions. The final orientation (theta) is calculate and weighted with angle wrapping in mind. The resulting pose represents the most likely position and orientation of the robot.
+#### Check inbounds
+If a particle in the particle cloud is outside the map bounds, generate a random particle to replace it.
 
 <!-- image of steps taken in run loop -->
 
