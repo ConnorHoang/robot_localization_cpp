@@ -26,18 +26,17 @@ Shown in Figure _ is the particle filter logic.
 <!-- block diagram of pf logic--> 
 
 #### Initialize Particles
-Finds the bounding box of the map and generates random particles within those bounds in valid locations until _(the desired number of particles is reached)__.
+Finds the bounding box of the map. Next, if given a pose estimate generates particles randomly around that estimate. Otherwise, generates random particles within map bounds in valid locations until the desired number of particles is reached.
 #### Update Particles with Odom
 This function finds the change in the robot's position since it was last updated. It then adds these changes in position to each particle as if each particle was the robot's position and orientation.  
 #### Update Particles with laser (LIDAR)
-The function parses the lidar data to determine the closest distance to an object. __mention threashould and infinite?__ Then the function determines for each particle in the particle cloud checks the closest distance to an obstacle at the same angle of the true lidar data. The difference between the true distance and each particle's difference is used to assign a weight, thereby updating the robot's most likely position.
+The function parses the lidar data to determine the closest distance and corresponding angle to an object. Then for each particle in the particle cloud, the function projects the true robot's closest distance out at the right angle. A helper function is called to get the closest distance from the projected point to an obstacle. As the ideal value would be in an object (and thereby zero), we proceed to weigh each particle such that the values closer to zero are more heavily weighted.
 #### Normalize Particles
-This function is straightforward -- it divides the weight of each particle by the total weight of all particles, so that all the weights add up to one.
+This divides the weight of each particle by the total weight of all particles, so that all the weights add up to one.
 #### Resample Particles
-Sort the particles in the particle cloud by weight and remove the lowest 25%. Replace 20% of the original particles as duplicates of the continuing particles with random noise, where continuing particles with higher weights have proportionally more particles assigned to them. Generate the remaining particles completely randomly. 
+Sort the particles in the particle cloud by weight and remove a set percentage of the lowest weighted particles (default 25%). Replace some percentage (default 20%) of the original particles as duplicates of the surviving particles with random noise, where surviving particles with higher weights have proportionally more particles assigned to them. Generate the remaining particles randomly as a means to mitigate dangers of particle death.
 #### Calculate Pose
-The estimated robot pose is calculated by finding the particle with the best weight, and then updating the transform between the map and odom frame to make the assumption that this particle's location and heading are the robot's position and heading. 
-#### 
+The robot's pose is estimated by calculating the weighted average of all particles in the particle cloud. The final x and y coordinates are the weighted mean of the particles' positions. The final orientation (theta) is calculate and weighted with angle wrapping in mind. The resulting pose represents the most likely position and orientation of the robot.
 
 <!-- image of steps taken in run loop -->
 
