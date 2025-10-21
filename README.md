@@ -26,7 +26,7 @@ Shown in Figure 1 is the particle filter logic, which starts by waiting for LIDA
 
 <!-- block diagram of pf logic--> 
 ![Block diagram of PF logic](media/block_diagram_PF_Logic.png)
-__Figure 1:__ Block diagram of particle filter logic.
+__Figure 1:__ Block diagram of particle filter logic. Logic chain starts at the "Wait for LIDAR data" block.
 
 #### Initialize Particles
 Finds the bounding box of the map. Next, if given a pose estimate generates particles randomly around that estimate. Otherwise, generates random particles within map bounds in valid locations until the desired number of particles is reached.
