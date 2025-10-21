@@ -191,6 +191,7 @@ private:
   double a_thresh;
 
   // Ros params
+  double laser_sigma_;
   double truncation_percentage_;
   double random_percentage_;
   double resample_noise_x_stddev_;

@@ -61,6 +61,10 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
   // Declare parameters with their default values
   this->declare_parameter<int>("n_particles", 300); // the number of particles to use
 
+
+  // update with lidar params
+  this->declare_parameter<double>("sensor_model.laser_sigma", 0.2);
+
   // resample params
   this->declare_parameter<double>("resampling.truncation_percentage", 0.25);
   this->declare_parameter<double>("resampling.random_percentage", 0.05);
@@ -71,7 +75,10 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
   // Get the parameters and store them in member variables
   this->n_particles = this->get_parameter("n_particles").as_int();
 
-    // resample params
+  // update with lidar params
+  this->get_parameter("sensor_model.laser_sigma", laser_sigma_);
+
+  // resample params
   this->get_parameter("resampling.truncation_percentage", truncation_percentage_);
   this->get_parameter("resampling.random_percentage", random_percentage_);
   this->get_parameter("resampling.noise_x_stddev", resample_noise_x_stddev_);
@@ -191,10 +198,10 @@ void ParticleFilter::run_loop()
 
 bool ParticleFilter::moved_far_enough_to_update(std::vector<float> new_odom_xy_theta)
 {
-  return abs(new_odom_xy_theta[0] - current_odom_xy_theta[0] > d_thresh ||
+  return abs(new_odom_xy_theta[0] - current_odom_xy_theta[0]) > d_thresh ||
              abs(new_odom_xy_theta[1] - current_odom_xy_theta[1]) >
                  d_thresh ||
-             abs(new_odom_xy_theta[2] - current_odom_xy_theta[2]) > a_thresh);
+             abs(new_odom_xy_theta[2] - current_odom_xy_theta[2]) > a_thresh;
 }
 
 void ParticleFilter::update_robot_pose()
@@ -253,24 +260,24 @@ void ParticleFilter::update_particles_with_odom()
     auto delta_theta = new_odom_xy_theta[2] - current_odom_xy_theta[2];
 
     // for each particle in particles, change in x by delta_x, y by delta_y, theta by delta_theta
-    // for (Particle& p : particle_cloud) {
-    //   p.x += delta_x;
-    //   p.y += delta_y;
-    //   p.theta += delta_theta;
-    // }
-
-    // In update_particles_with_odom()
     for (Particle& p : particle_cloud) {
-      // Correct motion model:
-      // Rotate the odom-frame delta by the particle's map-frame heading
-      float cos_theta = std::cos(p.theta);
-      float sin_theta = std::sin(p.theta);
-      
-      p.x += delta_x * cos_theta - delta_y * sin_theta;
-      p.y += delta_x * sin_theta + delta_y * cos_theta;
+      p.x += delta_x;
+      p.y += delta_y;
       p.theta += delta_theta;
-      p.theta = angles::normalize_angle(p.theta); // Always normalize angles!
     }
+
+    // // In update_particles_with_odom()
+    // for (Particle& p : particle_cloud) {
+    //   // Correct motion model:
+    //   // Rotate the odom-frame delta by the particle's map-frame heading
+    //   float cos_theta = std::cos(p.theta);
+    //   float sin_theta = std::sin(p.theta);
+      
+    //   p.x += delta_x * cos_theta - delta_y * sin_theta;
+    //   p.y += delta_x * sin_theta + delta_y * cos_theta;
+    //   p.theta += delta_theta;
+    //   p.theta = angles::normalize_angle(p.theta); // Always normalize angles!
+    // }
 
     // surely this works
     // For some reason I think the starter code didn't reset the odom distance
@@ -324,6 +331,8 @@ void ParticleFilter::resample_particles()
     survivor_weight_sum += p.w;
   }
 
+  double duplicate_ratio = 1.0 - (random_percentage/truncation_percentage);
+
   // Create noise generators
   std::normal_distribution<float> x_noise(0.0, static_cast<float>(resample_noise_x_stddev_));
   std::normal_distribution<float> y_noise(0.0, static_cast<float>(resample_noise_y_stddev_));
@@ -333,7 +342,7 @@ void ParticleFilter::resample_particles()
   for (const auto& survivor : particle_cloud) {
     // The number of new particles this survivor will spawn is proportional to its weight
     // relative to the other survivors.
-    long num_duplicates = std::round((survivor.w / survivor_weight_sum) * (num_to_remove*0.8));
+    long num_duplicates = std::round((survivor.w / survivor_weight_sum) * (num_to_remove*duplicate_ratio));
 
     for (long i = 0; i < num_duplicates; ++i) {
       Particle new_particle = survivor; // Create a copy
@@ -406,7 +415,7 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
     
     // Calculate weight based on difference between laser and particle measurements
     if (std::isfinite(cd_proj)) {
-      double sigma = 1.0;
+      double sigma = laser_sigma_;
       particle.w = std::exp(-(cd_proj * cd_proj) / (2.0 * sigma * sigma));
     } else {
       // If measurement is invalid, assign epsilon to avoid x/0
@@ -581,6 +590,8 @@ rcl_interfaces::msg::SetParametersResult ParticleFilter::on_parameters_changed(
       d_thresh = param.as_double();
     } else if (name == "a_thresh" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
       a_thresh = param.as_double();
+    } else if (name == "sensor_model.laser_sigma" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+      laser_sigma_ = param.as_double();
     } else if (name == "resampling.truncation_percentage" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
       truncation_percentage_ = param.as_double();
     } else if (name == "resampling.random_percentage" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
