@@ -58,10 +58,22 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
   n_particles = 300; // the number of particles to use
 
   d_thresh = 0.2; // the amount of linear movement before performing an update
-  a_thresh =
-      M_PI / 6; // the amount of angular movement before performing an update
+  a_thresh = M_PI / 6; // the amount of angular movement before performing an update
 
-  // TODO: define additional constants if needed
+  // Declare parameters with their default values
+  this->declare_parameter<double>("resampling.truncation_percentage", 0.25);
+  this->declare_parameter<double>("resampling.random_percentage", 0.05);
+  this->declare_parameter<double>("resampling.noise_x_stddev", 0.1);
+  this->declare_parameter<double>("resampling.noise_y_stddev", 0.1);
+  this->declare_parameter<double>("resampling.noise_theta_stddev", 0.05 * M_PI);
+
+  // Get the parameters and store them in member variables
+  this->get_parameter("resampling.truncation_percentage", truncation_percentage_);
+  this->get_parameter("resampling.random_percentage", random_percentage_);
+  this->get_parameter("resampling.noise_x_stddev", resample_noise_x_stddev_);
+  this->get_parameter("resampling.noise_y_stddev", resample_noise_y_stddev_);
+  this->get_parameter("resampling.noise_theta_stddev", resample_noise_theta_stddev_);
+
   // Previous pose estimate for getting angle
   // geometry_msgs::msg::Pose old_robot_pose;
   set_old_pose = false;
@@ -288,16 +300,16 @@ void ParticleFilter::resample_particles()
 {
   // make sure the distribution is normalized
   normalize_particles();
-  // TODO: fill out the rest of the implementation
-  // select lowest ceiling(n_particles/20) particles based upon weight (remove all others). 
-  // Use same method as in particle creation to create weighted distribution of new particles around by how many you remove 
-  // (take position of paticle and transform with difference generated using random distribution) (add noise)
 
-  // Remove bottom 20% of existing particles
-  const double truncation_percentage = 0.20;
+  // Define percentages
+  const double truncation_percentage = truncation_percentage_; // Remove bottom x%
+  const double random_percentage = random_percentage_;      // Add x% new random particles
+
+  // Calculate particle group counts
+  size_t num_to_truncate = static_cast<size_t>(this->n_particles * truncation_percentage);
+  size_t num_random = static_cast<size_t>(this->n_particles * random_percentage);
+  size_t num_duplicates_to_add = num_to_truncate - num_random;
   size_t num_to_remove = static_cast<size_t>(this->n_particles * truncation_percentage);
-  // num_to_remove = 1;
-  // size_t num_to_keep = this->n_particles - num_to_remove;
 
   // Sort particles by weight in ascending order (lowest weight first)
   std::sort(particle_cloud.begin(), particle_cloud.end(),
@@ -322,16 +334,16 @@ void ParticleFilter::resample_particles()
    // Create noise generators
   const float resample_noise_x_stddev_ = 0.1;
   const float resample_noise_y_stddev_ = 0.1;
-  const float resample_noise_theta_stddev_ = 0.1*M_PI;
-  std::normal_distribution<float> x_noise(0.0, resample_noise_x_stddev_);
-  std::normal_distribution<float> y_noise(0.0, resample_noise_y_stddev_);
-  std::normal_distribution<float> theta_noise(0.0, resample_noise_theta_stddev_);
+  const float resample_noise_theta_stddev_ = 0.05*M_PI;
+  std::normal_distribution<float> x_noise(0.0, static_cast<float>(resample_noise_x_stddev_));
+  std::normal_distribution<float> y_noise(0.0, static_cast<float>(resample_noise_y_stddev_));
+  std::normal_distribution<float> theta_noise(0.0, static_cast<float>(resample_noise_theta_stddev_));
 
-  // Determine how many duplicates each survivor should generate
+  // Determine how many duplicates each survivor should generate (20% of all particles will be dispersed)
   for (const auto& survivor : particle_cloud) {
     // The number of new particles this survivor will spawn is proportional to its weight
     // relative to the other survivors.
-    long num_duplicates = std::round((survivor.w / survivor_weight_sum) * num_to_remove);
+    long num_duplicates = std::round((survivor.w / survivor_weight_sum) * (num_to_remove*0.8));
 
     for (long i = 0; i < num_duplicates; ++i) {
       Particle new_particle = survivor; // Create a copy
@@ -347,19 +359,9 @@ void ParticleFilter::resample_particles()
     }
   }
 
-  // Deal with missing particle
-  while (new_particles.size() < num_to_remove) {
-    // If we are short, duplicate the best particle (which is now at the end of the sorted vector)
-    Particle best_particle = particle_cloud.back();
-    best_particle.x += x_noise(random_generator_);
-    best_particle.y += y_noise(random_generator_);
-    best_particle.theta += theta_noise(random_generator_);
-    best_particle.theta = angles::normalize_angle(best_particle.theta);
-    new_particles.push_back(best_particle);
-  }
-  // Deal with extra particle
-  while (new_particles.size() > num_to_remove) {
-    new_particles.pop_back(); // If we have too many, remove the last-added ones
+  // remaing particles are all random
+  while (new_particles.size() < num_to_truncate) {
+    new_particles.push_back(random_particle());
   }
 
   particle_cloud.insert(particle_cloud.end(), new_particles.begin(), new_particles.end());
