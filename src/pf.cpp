@@ -55,12 +55,13 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
   odom_frame = "odom";           // the name of the odometry coordinate frame
   scan_topic = "scan";           // the topic where we will get laser scans from
 
-  n_particles = 300; // the number of particles to use
-
   d_thresh = 0.2; // the amount of linear movement before performing an update
   a_thresh = M_PI / 6; // the amount of angular movement before performing an update
 
   // Declare parameters with their default values
+  this->declare_parameter<int>("n_particles", 300); // the number of particles to use
+
+  // resample params
   this->declare_parameter<double>("resampling.truncation_percentage", 0.25);
   this->declare_parameter<double>("resampling.random_percentage", 0.05);
   this->declare_parameter<double>("resampling.noise_x_stddev", 0.1);
@@ -68,15 +69,14 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
   this->declare_parameter<double>("resampling.noise_theta_stddev", 0.05 * M_PI);
 
   // Get the parameters and store them in member variables
+  this->n_particles = this->get_parameter("n_particles").as_int();
+
+    // resample params
   this->get_parameter("resampling.truncation_percentage", truncation_percentage_);
   this->get_parameter("resampling.random_percentage", random_percentage_);
   this->get_parameter("resampling.noise_x_stddev", resample_noise_x_stddev_);
   this->get_parameter("resampling.noise_y_stddev", resample_noise_y_stddev_);
   this->get_parameter("resampling.noise_theta_stddev", resample_noise_theta_stddev_);
-
-  // Previous pose estimate for getting angle
-  // geometry_msgs::msg::Pose old_robot_pose;
-  set_old_pose = false;
 
   // pose_listener responds to selection of a new approximate robot
   // location (for instance using rviz)
@@ -195,59 +195,40 @@ bool ParticleFilter::moved_far_enough_to_update(std::vector<float> new_odom_xy_t
 
 void ParticleFilter::update_robot_pose()
 {
-
-  //TODO: Test this
-
   // first make sure that the particle weights are normalized
   normalize_particles();
 
-  // determine best current pose estimate as lowest weight particle(closest to real data)
-  // UPDATE: oops, it was supposed to be the highest weight, not renamed yet
-  int index_of_lowest_weight = 0;
-  float lowest_weight = particle_cloud[0].w;
-  for (int i = 1; i < n_particles; i ++) {
-    if (particle_cloud[i].w > lowest_weight) {
-      index_of_lowest_weight = i;
-      lowest_weight = particle_cloud[i].w;
-    }
-  }  
 
   // assigns the latest pose estimate into self.robot_pose as a geometry_msgs.Pose object
   geometry_msgs::msg::Pose robot_pose;
-  /*
-  robot_pose.position.x = particle_cloud[index_of_lowest_weight].x;
-  robot_pose.position.y = particle_cloud[index_of_lowest_weight].y;
-  
-  // test thing
-  robot_pose.position.x = 0.0;
-  robot_pose.position.y = 0.0;
-  
-  // might be wrong
-  robot_pose.orientation = quaternion_from_euler(0.0,0.0,particle_cloud[index_of_lowest_weight].theta);
-  */
-  // ignore the stuff above this
-  // UPDATE: this does the exact same as the code above
-  robot_pose = particle_cloud[index_of_lowest_weight].as_pose();
 
-// UPDATE: math here is likely wrong
-// Set estimated angle to be angle between old and new estimated position
-  if (set_old_pose){
-  float diffy = robot_pose.position.y - old_robot_pose.position.y;
-  float diffx = robot_pose.position.x - old_robot_pose.position.x;
-  float estimated_angle = std::atan2(diffy, diffx);
-  float old_delta_angle = euler_from_quaternion(old_robot_pose.orientation)[2];
-  // robot_pose.orientation = quaternion_from_euler(0.0,0.0,estimated_angle + old_delta_angle);
-  }
-  else {
-  set_old_pose = true;  
-  }
-  old_robot_pose = robot_pose;
   
+  double total_x = 0.0;
+  double total_y = 0.0;
+  double avg_cos = 0.0;
+  double avg_sin = 0.0;
+
+  for (const auto& p : particle_cloud) {
+      // Sum for position
+      total_x += p.w * p.x;
+      total_y += p.w * p.y;
+      
+      // Sum for angle
+      avg_cos += p.w * std::cos(p.theta);
+      avg_sin += p.w * std::sin(p.theta);
+  }
+
+  // assign position values to robot pose
+  robot_pose.position.x = total_x;
+  robot_pose.position.y = total_y;
+
+  // assign thate value to robot pose
+  float mean_theta = std::atan2(avg_sin, avg_cos);
+  robot_pose.orientation = quaternion_from_euler(0, 0, mean_theta);
   
   if (odom_pose.has_value()) // then update robot pose
   {
-    transform_helper_->fix_map_to_odom_transform(robot_pose,
-                                                 odom_pose.value());
+    transform_helper_->fix_map_to_odom_transform(robot_pose,odom_pose.value());
   }
   else
   {
@@ -268,15 +249,23 @@ void ParticleFilter::update_particles_with_odom()
     auto delta_theta = new_odom_xy_theta[2] - current_odom_xy_theta[2];
 
     // for each particle in particles, change in x by delta_x, y by delta_y, theta by delta_theta
+    // for (Particle& p : particle_cloud) {
+    //   p.x += delta_x;
+    //   p.y += delta_y;
+    //   p.theta += delta_theta;
+    // }
+
+    // In update_particles_with_odom()
     for (Particle& p : particle_cloud) {
-      // UPDATE: the commented code is from the code on discord and does not work
-      // for some reason. 
-      // float transform_theta = p.theta + 0.0*current_odom_xy_theta[2];
-      // p.x += delta_x * std::cos(transform_theta) - delta_y * std::sin(transform_theta);
-      // p.y += delta_x * std::sin(transform_theta) + delta_y * std::cos(transform_theta);
-      p.x += delta_x;
-      p.y += delta_y;
+      // Correct motion model:
+      // Rotate the odom-frame delta by the particle's map-frame heading
+      float cos_theta = std::cos(p.theta);
+      float sin_theta = std::sin(p.theta);
+      
+      p.x += delta_x * cos_theta - delta_y * sin_theta;
+      p.y += delta_x * sin_theta + delta_y * cos_theta;
       p.theta += delta_theta;
+      p.theta = angles::normalize_angle(p.theta); // Always normalize angles!
     }
 
     // surely this works
@@ -441,19 +430,41 @@ void ParticleFilter::update_initial_pose(geometry_msgs::msg::PoseWithCovarianceS
 void ParticleFilter::initialize_particle_cloud(
     std::optional<std::vector<float>> xy_theta)
 {
-  // where to initialize the particle cloud
-  if (!xy_theta.has_value())
-  {
-    // This is so you don't need to pass in the odom pose everytime.
-    xy_theta = transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
-  }
-
-  // TODO: create normal distribution of particles around this point
+  // reset cloud
   particle_cloud.clear();
   particle_cloud.reserve(this->n_particles);
 
-  for (int i = 0; i < this->n_particles; i++) {
-    this->particle_cloud.push_back(this->random_particle());
+  // Define standard deviations for initial pose
+  const float init_x_stddev = 0.5;
+  const float init_y_stddev = 0.5;
+  const float init_theta_stddev = M_PI / 12.0;
+
+  // Set up random distributions
+  std::normal_distribution<float> x_noise(0.0, init_x_stddev);
+  std::normal_distribution<float> y_noise(0.0, init_y_stddev);
+  std::normal_distribution<float> theta_noise(0.0, init_theta_stddev);
+
+  // where to initialize the particle cloud
+  if (xy_theta.has_value()) {
+    RCLCPP_INFO(this->get_logger(), "Initializing particles around provided pose.");
+    float mean_x = xy_theta.value()[0];
+    float mean_y = xy_theta.value()[1];
+    float mean_theta = xy_theta.value()[2];
+
+    for (int i = 0; i < this->n_particles; i++) {
+        float x = mean_x + x_noise(random_generator_);
+        float y = mean_y + y_noise(random_generator_);
+        float theta = mean_theta + theta_noise(random_generator_);
+        particle_cloud.push_back(Particle(1.0f / this->n_particles, theta, x, y));
+    }
+  }
+  else {
+    RCLCPP_INFO(this->get_logger(), "Initializing particles globally.");
+    // This is so you don't need to pass in the odom pose everytime.
+    // (Note: this branch is only used for the *very first* localization)
+    for (int i = 0; i < this->n_particles; i++) {
+        this->particle_cloud.push_back(this->random_particle());
+    }
   }
 
   normalize_particles(); // Maybe remove this since update_robot_pose also does this

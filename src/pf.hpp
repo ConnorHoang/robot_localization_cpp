@@ -206,9 +206,6 @@ private:
   std::mt19937 random_generator_; // random number engine
   std::uniform_real_distribution<float> uniform_distribution_; // distribution of randomness
 
-  geometry_msgs::msg::Pose old_robot_pose;
-  bool set_old_pose;
-
 };
 
 
