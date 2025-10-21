@@ -25,7 +25,7 @@ Within pf.cpp, we had a class called ParticleFilter which contained the fundamen
 Shown in Figure _ is the particle filter logic.
 
 <!-- block diagram of pf logic--> 
-![Block diagram of pf logic](media/CompRobo Localization PF Logic.png)
+![Block diagram of PF logic](media/block_diagram_PF_Logic.png)
 
 #### Initialize Particles
 Finds the bounding box of the map. Next, if given a pose estimate generates particles randomly around that estimate. Otherwise, generates random particles within map bounds in valid locations until the desired number of particles is reached.
