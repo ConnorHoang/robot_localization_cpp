@@ -209,8 +209,11 @@ void ParticleFilter::update_robot_pose()
   // first make sure that the particle weights are normalized
   normalize_particles();
 
-  // assigns the latest pose estimate into self.robot_pose as a geometry_msgs.Pose object
+  // assigns the latest pose estimate into self.robot_pose
+  // as a geometry_msgs.Pose object
   geometry_msgs::msg::Pose robot_pose;
+  // this pose estimate is calculated below as the weighted mean of the
+  // particle guesses, so more likely guesses have more influence
 
   double total_x = 0.0;
   double total_y = 0.0;
@@ -232,7 +235,7 @@ void ParticleFilter::update_robot_pose()
   robot_pose.position.x = total_x;
   robot_pose.position.y = total_y;
 
-  // assign thate value to robot pose
+  // assign theta value to robot pose
   float mean_theta = std::atan2(avg_sin, avg_cos);
   robot_pose.orientation = quaternion_from_euler(0, 0, mean_theta);
   
@@ -265,9 +268,9 @@ void ParticleFilter::update_particles_with_odom()
       p.theta += delta_theta;
     }
 
-    // For some reason I think the starter code didn't reset the odom distance
-    // after deciding the odom distance was far enough to update the particles
-    // so I'm doing that here
+    // For some reason I think the starter code didn't reset the previous odom
+    // position after deciding the odom distance was far enough to update the
+    // particles, so I'm doing that here
      current_odom_xy_theta = new_odom_xy_theta;
  
   }
@@ -541,16 +544,15 @@ void ParticleFilter::check_particles_inbounds() {
 
 void ParticleFilter::normalize_particles()
 {
-  // TODO: test this
-  // Sum of all weights divided by number of all particles
-  // for particle in particles, divide by sum of weights
   float sum_weights = 0;
   for (int i = 0; i < n_particles; i ++) {
     sum_weights += particle_cloud[i].w;
   }
     
+  // for particle in particles, divide by sum of weights
+  // so all weights add up to 1
   for (int i = 0; i < n_particles; i ++) {
-    particle_cloud[i].w /= sum_weights; // changed from avg weight to total weight -> I'm 98% sure this is right
+    particle_cloud[i].w /= sum_weights;
   }
   
 }

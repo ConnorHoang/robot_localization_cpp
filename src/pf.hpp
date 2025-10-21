@@ -130,7 +130,7 @@ private:
   /**
    * Resample the particles according to the new particle weights.
    * The weights stored with each particle should define the probability that
-   * a particular particle is selected in the resampling step.  You may want
+   * a particular particle is selected in the resampling step. You may want
    * to make use of the given helper function draw_random_sample in
    * helper_functions.py.
    */
@@ -162,22 +162,25 @@ private:
   void initialize_particle_cloud(
       std::optional<std::vector<float>> xy_theta = std::nullopt);
 
+  /**
+   * Divide the weights of all the particles such that all the weights add up to one
+   */
   void normalize_particles();
 
   void publish_particles(rclcpp::Time timestamp);
 
   void scan_received(sensor_msgs::msg::LaserScan msg);
 
-  Particle random_particle();
   /**
-   * Generate a random particle within the bounds of the map, and not in an object
+   * Generate a random particle within the bounds of the map, and not within an object
    */
-
-  void check_particles_inbounds();
+  Particle random_particle();
+  
   /**
    * for each particle in particles, determine if in map bounds or in object. If NOT,
-   * do nothing, if YES, create new particle and return it.
+   * do nothing, if YES, replace that particle with a new random particle. 
    */
+  void check_particles_inbounds();
 
   /**
    * Callback function for dynamic parameter updates.
