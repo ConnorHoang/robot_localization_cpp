@@ -30,13 +30,13 @@ Finds the bounding box of the map. Next, if given a pose estimate generates part
 #### Update Particles with Odom
 This function finds the change in the robot's position since it was last updated. It then adds these changes in position to each particle as if each particle was the robot's position and orientation.  
 #### Update Particles with laser (LIDAR)
-The function parses the lidar data to determine the closest distance and corresponding angle to an object. Then for each particle in the particle cloud, the function projects the true robot's closest distance out at the right angle. A helper function is called to get the closest distance from the projected point to an obstacle. As the ideal value would be in an object (and thereby zero), we proceed to weigh each particle such that the values closer to zero are more heavily weighted.
+The function parses the LIDAR data to determine the closest distance and corresponding angle to an object. Then for each particle in the particle cloud, the function projects the true robot's closest distance out at the right angle. A helper function is called to get the closest distance from the projected point to an obstacle. As the ideal value would be in an object (and thereby zero), we proceed to weigh each particle such that the values closer to zero are more heavily weighted.
 #### Normalize Particles
 This divides the weight of each particle by the total weight of all particles, so that all the weights add up to one.
 #### Resample Particles
 Sort the particles in the particle cloud by weight and remove a set percentage of the lowest weighted particles (default 25%). Replace some percentage (default 20%) of the original particles as duplicates of the surviving particles with random noise, where surviving particles with higher weights have proportionally more particles assigned to them. Generate the remaining particles randomly as a means to mitigate dangers of particle death.
 #### Calculate Pose
-The robot's pose is estimated by calculating the weighted average of all particles in the particle cloud. The final x and y coordinates are the weighted mean of the particles' positions. The final orientation (theta) is calculate and weighted with angle wrapping in mind. The resulting pose represents the most likely position and orientation of the robot.
+The robot's pose is estimated by calculating the weighted average of all particles in the particle cloud. The final x and y coordinates are the weighted mean of the particles' positions. The final orientation (theta) is calculated and weighted with angle wrapping in mind. The resulting pose represents the most likely position and orientation of the robot.
 #### Check inbounds
 If a particle in the particle cloud is outside the map bounds, generate a random particle to replace it.
 
@@ -51,9 +51,9 @@ Another challenge we faced was working with outside code we did not write. While
 
 
 ### Next Steps
-One of the biggest limitations we found was that the provided implementation of an occupancy field did not provide the angle to the nearest obstacle, meaning that our particles struggled to converge on the robot's orientation. Future work could explore a more robust angle calculation that makes fewer assumptions, either through an improved occupancy field implementation or using new methods. 
+Overall, our particle filter is able to converge on the correct location, but it does have some limitations in regards to accuracy. Future progress could explore the different parameters available to us and find optimal values for them. We could explore slightly different methods of resampling, for example, by generating a small number of completely random particles, or reducing added noise as a function of how certain we are about our guesses.  
 
-Although our choice to use C++ provided us with runtime optimization, our implementation leaves a lot of room for speed improvements. Right now, the filtering steps run just fast enough to localize the robot in real time -- this is good enough for small maps like the one we used, but localization on larger maps would likely need more particles to avoid dangers like particle death. Speed optimizations would let us use more particles, more resampling, and potentially even additional methods of evaluating particle likelihoods.
+While our choice to use C++ provided us with runtime optimization, our implementation still leaves a lot of room for speed improvements. Right now, the filtering steps run just fast enough to localize the robot in real time -- this is good enough for small maps like the one we used, but localization on larger maps would likely need more particles to avoid dangers like particle death. Speed optimizations would let us use more particles, more resampling, and potentially even additional methods of evaluating particle likelihoods.
 
 ### Additional Documentation
 <!-- say where bag files are attached here-->
