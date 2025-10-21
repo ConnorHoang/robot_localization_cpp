@@ -22,7 +22,7 @@ Within pf.cpp, we had a class called ParticleFilter which contained the fundamen
 ### Particle Filter Logic 
 <!--appraoch-->
 <!--Explain conceptual logic behind how a particle filter works-->
-Shown in Figure 1 is the particle filter logic.
+Shown in Figure 1 is the particle filter logic, which starts by waiting for LIDAR data.
 
 <!-- block diagram of pf logic--> 
 ![Block diagram of PF logic](media/block_diagram_PF_Logic.png)
