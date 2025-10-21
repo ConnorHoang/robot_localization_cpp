@@ -105,6 +105,10 @@ private:
    */
   void run_loop();
  
+  /**
+   * Determine if the robot has moved far enough (based on translation and
+   * angular thresholds) to perform an update
+   */
   bool moved_far_enough_to_update(std::vector<float> new_odom_xy_theta);
 
   /**

@@ -61,7 +61,6 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
   // Declare parameters with their default values
   this->declare_parameter<int>("n_particles", 300); // the number of particles to use
 
-
   // update with lidar params
   this->declare_parameter<double>("sensor_model.laser_sigma", 0.2);
 
@@ -105,6 +104,7 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
 
   auto sub2_opt = rclcpp::SubscriptionOptions();
   sub2_opt.callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
   // laser_subscriber listens for data from the lidar
   laserscan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
       scan_topic,
@@ -170,8 +170,7 @@ void ParticleFilter::run_loop()
   // clear the current scan so that we can process the next one
   scan_to_process.reset();
   odom_pose = new_pose;
-  auto new_odom_xy_theta =
-      transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
+  auto new_odom_xy_theta = transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
   if (current_odom_xy_theta.size() == 0)
   {
     current_odom_xy_theta = new_odom_xy_theta;
@@ -188,8 +187,7 @@ void ParticleFilter::run_loop()
     update_particles_with_odom(); // update based on odometry
     update_particles_with_laser(r,theta); // update based on laser scan
     update_robot_pose();                // update robot's pose based on particles
-    resample_particles();               // resample particles to focus on areas of
-                                        // high density
+    resample_particles();               // resample particles to focus on areas of high possibility
   }
 
   // publish particles (so things like rviz can see them)
@@ -209,16 +207,15 @@ void ParticleFilter::update_robot_pose()
   // first make sure that the particle weights are normalized
   normalize_particles();
 
-
   // assigns the latest pose estimate into self.robot_pose as a geometry_msgs.Pose object
   geometry_msgs::msg::Pose robot_pose;
 
-  
   double total_x = 0.0;
   double total_y = 0.0;
   double avg_cos = 0.0;
   double avg_sin = 0.0;
 
+  // for each particle in particle_cloud
   for (const auto& p : particle_cloud) {
       // Sum for position
       total_x += p.w * p.x;
@@ -252,7 +249,7 @@ void ParticleFilter::update_particles_with_odom()
   auto new_odom_xy_theta = transform_helper_->convert_pose_to_xy_theta(odom_pose.value());
 
   // compute the change in x,y,theta since our last update
-  if (current_odom_xy_theta.size() >= 3) /// why >=3 vs ==3
+  if (current_odom_xy_theta.size() >= 3)
   {
     auto old_odom_xy_theta = current_odom_xy_theta;
     auto delta_x = new_odom_xy_theta[0] - current_odom_xy_theta[0];
@@ -266,20 +263,6 @@ void ParticleFilter::update_particles_with_odom()
       p.theta += delta_theta;
     }
 
-    // // In update_particles_with_odom()
-    // for (Particle& p : particle_cloud) {
-    //   // Correct motion model:
-    //   // Rotate the odom-frame delta by the particle's map-frame heading
-    //   float cos_theta = std::cos(p.theta);
-    //   float sin_theta = std::sin(p.theta);
-      
-    //   p.x += delta_x * cos_theta - delta_y * sin_theta;
-    //   p.y += delta_x * sin_theta + delta_y * cos_theta;
-    //   p.theta += delta_theta;
-    //   p.theta = angles::normalize_angle(p.theta); // Always normalize angles!
-    // }
-
-    // surely this works
     // For some reason I think the starter code didn't reset the odom distance
     // after deciding the odom distance was far enough to update the particles
     // so I'm doing that here
@@ -292,7 +275,6 @@ void ParticleFilter::update_particles_with_odom()
     return;
   }
 
-  // TODO: test this
   check_particles_inbounds();
 }
 
@@ -302,8 +284,8 @@ void ParticleFilter::resample_particles()
   normalize_particles();
 
   // Define percentages
-  const double truncation_percentage = truncation_percentage_; // Remove bottom x%
-  const double random_percentage = random_percentage_;      // Add x% new random particles
+  double truncation_percentage = truncation_percentage_; // Remove bottom x% in 0.00 to 1.00
+  double random_percentage = random_percentage_;      // Add x% new random particles in 0.00 to 1.00
 
   // Calculate particle group counts
   size_t num_to_truncate = static_cast<size_t>(this->n_particles * truncation_percentage);
@@ -370,6 +352,8 @@ void ParticleFilter::resample_particles()
 void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vector<float> theta)
 {
   /*
+  Basic Logic:
+
   - get laser scan data
   - determine laser scan closest distance (cd_l) to real robot, that is above a threshold (and store the corresponding angle as theta_l)
 
@@ -418,7 +402,7 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
       double sigma = laser_sigma_;
       particle.w = std::exp(-(cd_proj * cd_proj) / (2.0 * sigma * sigma));
     } else {
-      // If measurement is invalid, assign epsilon to avoid x/0
+      // If measurement is invalid, assign epsilon to avoid dividing by zero
       particle.w = 0.0001f;
     }
   }
@@ -456,7 +440,7 @@ void ParticleFilter::initialize_particle_cloud(
 
   // where to initialize the particle cloud
   if (xy_theta.has_value()) {
-    RCLCPP_INFO(this->get_logger(), "Initializing particles around provided pose.");
+    // if given pose, generate particles around that pose
     float mean_x = xy_theta.value()[0];
     float mean_y = xy_theta.value()[1];
     float mean_theta = xy_theta.value()[2];
@@ -467,11 +451,8 @@ void ParticleFilter::initialize_particle_cloud(
         float theta = mean_theta + theta_noise(random_generator_);
         particle_cloud.push_back(Particle(1.0f / this->n_particles, theta, x, y));
     }
-  }
-  else {
-    RCLCPP_INFO(this->get_logger(), "Initializing particles globally.");
-    // This is so you don't need to pass in the odom pose everytime.
-    // (Note: this branch is only used for the *very first* localization)
+  } else {
+    // otherwise, initialize randomly in map
     for (int i = 0; i < this->n_particles; i++) {
         this->particle_cloud.push_back(this->random_particle());
     }
@@ -487,6 +468,14 @@ Particle ParticleFilter::random_particle() {
   float ux = bounds[1];
   float ly = bounds[2];
   float uy = bounds[3];    
+
+  /**
+   * For MAC testing purposes, override bounds to known map size
+   */
+  // lx = 0.0;
+  // ux = 530.0;
+  // ly = 0.0;
+  // uy = 1433.0;
   
   float width = ux - lx;
   float height = uy - ly;
@@ -527,7 +516,6 @@ void ParticleFilter::check_particles_inbounds() {
 
   for (Particle& p : particle_cloud) {
     // check if particle i is in bounds
-//    if (lx <= p.x || p.x <= ux || ly <= p.y || p.y <= uy) {
     if (p.x < lx || p.x > ux || p.y < ly || p.y > uy) {
       p = random_particle();
       // test
@@ -540,7 +528,7 @@ void ParticleFilter::normalize_particles()
 {
   // TODO: test this
   // Sum of all weights divided by number of all particles
-  // for particle in particles, divide by average of weights
+  // for particle in particles, divide by sum of weights
   float sum_weights = 0;
   for (int i = 0; i < n_particles; i ++) {
     sum_weights += particle_cloud[i].w;
@@ -573,8 +561,7 @@ void ParticleFilter::publish_particles(rclcpp::Time timestamp)
 
 // Callback function for parameter updates.
 rcl_interfaces::msg::SetParametersResult ParticleFilter::on_parameters_changed(
-    const std::vector<rclcpp::Parameter> & parameters)
-{
+    const std::vector<rclcpp::Parameter> & parameters) {
   auto result = rcl_interfaces::msg::SetParametersResult();
   result.successful = true;
 
