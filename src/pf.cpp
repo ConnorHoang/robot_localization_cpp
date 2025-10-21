@@ -412,7 +412,6 @@ void ParticleFilter::update_particles_with_laser(std::vector<float> r, std::vect
   }
   
   // Affirm particles are in valid places and normalize weights
-  check_particles_inbounds();
   normalize_particles();
 
   (void)r;

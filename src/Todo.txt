@@ -8,3 +8,11 @@ Particle things to implement
 
 1. update robot pose: ParticleFilter::update_robot_pose - Franklin
     rife for improvement
+
+
+
+Before final
+- Franklin: Bag files, Overall Code Structure
+- Connor: Particle Filter, Overview
+
+- both review
