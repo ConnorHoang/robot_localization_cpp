@@ -175,14 +175,20 @@ private:
    * do nothing, if YES, create new particle and return it.
    */
 
+  /**
+   * Callback function for dynamic parameter updates.
+   */
+  rcl_interfaces::msg::SetParametersResult on_parameters_changed(
+      const std::vector<rclcpp::Parameter> & parameters);
+
 private:
   std::string base_frame;
   std::string map_frame;
   std::string odom_frame;
   std::string scan_topic;
   int n_particles;
-  float d_thresh;
-  float a_thresh;
+  double d_thresh;
+  double a_thresh;
 
   // Ros params
   double truncation_percentage_;
@@ -191,6 +197,7 @@ private:
   double resample_noise_y_stddev_;
   double resample_noise_theta_stddev_;
 
+  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
   rclcpp::Publisher<nav2_msgs::msg::ParticleCloud>::SharedPtr particle_pub;
   std::optional<builtin_interfaces::msg::Time> last_scan_timestamp;
   std::optional<sensor_msgs::msg::LaserScan> scan_to_process;

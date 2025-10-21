@@ -78,6 +78,10 @@ ParticleFilter::ParticleFilter() : Node("pf"), uniform_distribution_(0.0f, 1.0f)
   this->get_parameter("resampling.noise_y_stddev", resample_noise_y_stddev_);
   this->get_parameter("resampling.noise_theta_stddev", resample_noise_theta_stddev_);
 
+  // parameter update callback
+  auto callback = std::bind(&ParticleFilter::on_parameters_changed, this, std::placeholders::_1);
+  param_callback_handle_ = this->add_on_set_parameters_callback(callback);
+
   // pose_listener responds to selection of a new approximate robot
   // location (for instance using rviz)
   auto sub1_opt = rclcpp::SubscriptionOptions();
@@ -320,10 +324,7 @@ void ParticleFilter::resample_particles()
     survivor_weight_sum += p.w;
   }
 
-   // Create noise generators
-  const float resample_noise_x_stddev_ = 0.1;
-  const float resample_noise_y_stddev_ = 0.1;
-  const float resample_noise_theta_stddev_ = 0.05*M_PI;
+  // Create noise generators
   std::normal_distribution<float> x_noise(0.0, static_cast<float>(resample_noise_x_stddev_));
   std::normal_distribution<float> y_noise(0.0, static_cast<float>(resample_noise_y_stddev_));
   std::normal_distribution<float> theta_noise(0.0, static_cast<float>(resample_noise_theta_stddev_));
@@ -559,6 +560,40 @@ void ParticleFilter::publish_particles(rclcpp::Time timestamp)
 
   // actually send the message so that we can view it in rviz
   particle_pub->publish(msg);
+}
+
+// Callback function for parameter updates.
+rcl_interfaces::msg::SetParametersResult ParticleFilter::on_parameters_changed(
+    const std::vector<rclcpp::Parameter> & parameters)
+{
+  auto result = rcl_interfaces::msg::SetParametersResult();
+  result.successful = true;
+
+  // Loop through all parameters that were changed
+  for (const auto & param : parameters) {
+    std::string name = param.get_name();
+    RCLCPP_INFO(get_logger(), "Parameter changed: %s", name.c_str());
+
+    // Check which parameter it is and update the corresponding member variable
+    if (name == "n_particles" && param.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
+      n_particles = param.as_int();
+    } else if (name == "d_thresh" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+      d_thresh = param.as_double();
+    } else if (name == "a_thresh" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+      a_thresh = param.as_double();
+    } else if (name == "resampling.truncation_percentage" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+      truncation_percentage_ = param.as_double();
+    } else if (name == "resampling.random_percentage" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+      random_percentage_ = param.as_double();
+    } else if (name == "resampling.noise_x_stddev" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+      resample_noise_x_stddev_ = param.as_double();
+    } else if (name == "resampling.noise_y_stddev" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+      resample_noise_y_stddev_ = param.as_double();
+    } else if (name == "resampling.noise_theta_stddev" && param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+      resample_noise_theta_stddev_ = param.as_double();
+    }
+  }
+  return result;
 }
 
 void ParticleFilter::scan_received(sensor_msgs::msg::LaserScan msg)
