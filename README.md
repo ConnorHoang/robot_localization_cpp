@@ -52,7 +52,7 @@ update_robot_pose(): The robot's pose is estimated by calculating the weighted a
 check_particles_inbounds(): If a particle in the particle cloud is outside the map bounds, generate a random particle to replace it.
 
 <!-- image of steps taken in run loop if time-->
-![pf_localization_demo](https://github.com/user-attachments/assets/6a7951f2-dabc-4234-a9a4-7e6a294e6751)
+![demo_final](https://github.com/user-attachments/assets/546d9649-e4a5-4c14-a6ad-21ba847be36e)
 
 
 ### Challenges and Takeaways
