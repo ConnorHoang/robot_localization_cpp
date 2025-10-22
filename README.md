@@ -52,6 +52,8 @@ update_robot_pose(): The robot's pose is estimated by calculating the weighted a
 check_particles_inbounds(): If a particle in the particle cloud is outside the map bounds, generate a random particle to replace it.
 
 <!-- image of steps taken in run loop if time-->
+![pf_localization_demo](https://github.com/user-attachments/assets/6a7951f2-dabc-4234-a9a4-7e6a294e6751)
+
 
 ### Challenges and Takeaways
 <!--Removed for being redundant from seperate presentation: One notable challenge has been adapting to C++, particularly in a ROS enviorment. We both had some previous experience with C++ in firmware or otherwise, but we came into this project unfamiliar with some of the more complex elements of the language, such as pointers and the abstraction techniques that ROS uses. Most of the learnings here were from syntax and fundamental knowledge of how C++ works, especially as opposed to Python.  -->
