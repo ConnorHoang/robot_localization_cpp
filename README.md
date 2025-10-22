@@ -15,6 +15,7 @@ Our code communicates with the robot and with visualization tools using ROS topi
 <!-- insert here figure of pubs and subs -->
 
 <img width="1492" height="364" alt="pub_sub_graph" src="https://github.com/user-attachments/assets/5ba03b2f-5455-40b5-8289-c8facf4a5d4e" />
+
 **Figure 1:** Image from rqt of publishers and subscribers in particle filter implementation. Not pictured is that /cmd_vel sends velocity commands to the robot and /scan is the LIDAR data from the robot.
 
 Within pf.cpp, we had a class called ParticleFilter which contained the fundamental operations for the particle filter implementation. 
@@ -27,12 +28,16 @@ Within pf.cpp, we had a class called ParticleFilter which contained the fundamen
 Shown in Figure 2 is the particle filter logic. The logic starts with the "wait for LIDAR data" block and repeats in the chain outlined by the diagram. 
 
 <!-- block diagram of pf logic--> 
-<img width="960" height="720" alt="block_diagram_PF_Logic" src="https://github.com/user-attachments/assets/3c911256-c967-4c21-ada6-9057b59211da" />
-__Figure 2:__ Block diagram of particle filter logic. Logic chain starts at the "Wait for LIDAR data" block.
+![block diagram of pf logic](media/block_diagram_PF_Logic.png)
+**Figure 2:** Block diagram of particle filter logic. Logic chain starts at the "Wait for LIDAR data" block.
 
 The algorithm starts by waiting for LIDAR scan data as it is necessary for our ```update_particles_with_laser()``` function to work. When the scan is received, we check if a particle cloud has been generated. If not, we generate one and wait for new data. Otherwise the program continues by checking if the robot moved enough for new data to be useful (scanning the same space repeatedly provides no additional information in our system). If the robot moved enough, we call update_particles with odometry. This function allows for each particle to undergo the same motion change as the robot. 
 
 Next, we reweigh by updating the particles with the laser data. For each particle, we project a vector from the particle's position at the angle corresponding to the robot's closest LIDAR measurement. This projection simulates what the particle would detect if it were the robot's true position. We then find the distance from this projected endpoint to the nearest obstacle on the map. If the particle is at the correct location with the correct orientation, this projected point should land inside an obstacle, leading to a value of 0. Hence, the code reweighs with a gaussian weighting function to reward smaller values of closest distance at the projected point.
+
+<!--angle projection visual-->
+![projection visualizer](media/comprobo_pf_projection_diagram(v3).png)
+**Figure 3:** Visual showing example of how angle information is used when projecting from each particle. Similar sized green lines indicate simply using closest distance from particle to object as a weight does not account for angle. Conversely, the projected closest distances and and differing closest distances from the projected points do seem to be affected by angle.
 
 Finally, the particle filter resamples particles to cluster in areas of the map with greater likelihoods of the robot's presence. By replacing the lowest-weighted 25% of particles and distributing 80% of those replaced particles near the particles with the highest weights, convergence on the most likely areas is encouraged. The remaining 5% of particles being randomly generated provides a means to escape undesirable (inaccurate) local minima. All percentage values were tuned to an arbitrarily sufficient level.
 
