@@ -11,11 +11,11 @@ To do this, we implemented a particle filter in C++ using ROS2 middleware. We we
 <!--Which files, explain c++...-->
 Our primary particle filter logic is held in pf.cpp and the corresponding header file pf.hpp. We also have angle_helpers, helper_functions, and occupancy_field as files with functionality we use in pf.cpp related to their name.
 
-Our code communicates with the robot and with visualization tools using ROS topics. The particle filter code itself is a ROS node, and it subscribes to the laser scan topic published by the robot. Whenever it updates the position estimate, it publishes that estimate to the transform `/tf` topic. It also publishes the particle cloud of pose guesses for debugging purposes. This topic, as well as the provided map, are displayed using the rviz2 ROS visualization tool. Rviz can also be used to publish an initial guess for the robot's position, so the convergence of the robot can be tested without needing large amounts of particles on larger maps. Separately, a teleoperation ROS node publishes move commands to the `/cmd_vel` topic, letting the robot drive around to gather more data about its environment. 
+Our code communicates with the robot and with visualization tools using ROS topics. The particle filter code itself is a ROS node, and it subscribes to the laser scan topic published by the robot. Whenever it updates the position estimate, it publishes that estimate to the transform `/tf` topic. It also publishes the particle cloud of pose guesses for debugging purposes. This topic, as well as the provided map, are displayed using the rviz2 ROS visualization tool. Rviz can also be used to publish an initial guess for the robot's position, so the convergence of the robot can be tested without needing a large volume of updates, particuarly on larger maps. Separately, we used a teleoperation ROS node to publish move commands to the `/cmd_vel` topic, letting the robot drive around to gather more data about its environment. This teleop setup could be replaced with a different routine (i.e. bag file) and the particle filter could still acheive convergence.
 <!-- insert here figure of pubs and subs -->
 
 <img width="1492" height="364" alt="pub_sub_graph" src="https://github.com/user-attachments/assets/5ba03b2f-5455-40b5-8289-c8facf4a5d4e" />
-
+**Figure 1:** Image from rqt of publishers and subscribers in particle filter implementation. Not pictured is that /cmd_vel sends velocity commands to the robot and /scan is the LIDAR data from the robot.
 
 Within pf.cpp, we had a class called ParticleFilter which contained the fundamental operations for the particle filter implementation. 
 
@@ -24,11 +24,11 @@ Within pf.cpp, we had a class called ParticleFilter which contained the fundamen
 ### Particle Filter Logic 
 <!--appraoch-->
 <!--Explain conceptual logic behind how a particle filter works-->
-Shown in Figure 1 is the particle filter logic. The logic starts with the "wait for LIDAR data" block and repeats in the chain outlined by the diagram. 
+Shown in Figure 2 is the particle filter logic. The logic starts with the "wait for LIDAR data" block and repeats in the chain outlined by the diagram. 
 
 <!-- block diagram of pf logic--> 
 ![Block diagram of PF logic](media/block_diagram_PF_Logic.png)
-__Figure 1:__ Block diagram of particle filter logic. Logic chain starts at the "Wait for LIDAR data" block.
+__Figure 2:__ Block diagram of particle filter logic. Logic chain starts at the "Wait for LIDAR data" block.
 
 The algorithm start by waiting for LIDAR scan data as it is necessary for our ```update_particles_with_laser()``` function to work. When the scan is received, check if a particle cloud has been generated. If not, we generate one and wait for new data. Otherwise the program continues by checking if the robot moved enough for new data to be useful (scanning the same space repeatedly provides no additional information in our system). If the robot moved enough, we call update particles with odometry. This function allows for each particle to undergo the same change as the robot. 
 
