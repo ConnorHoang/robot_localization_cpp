@@ -27,7 +27,7 @@ Within pf.cpp, we had a class called ParticleFilter which contained the fundamen
 Shown in Figure 2 is the particle filter logic. The logic starts with the "wait for LIDAR data" block and repeats in the chain outlined by the diagram. 
 
 <!-- block diagram of pf logic--> 
-![Block diagram of PF logic](media/block_diagram_PF_Logic.png)
+<img width="960" height="720" alt="block_diagram_PF_Logic" src="https://github.com/user-attachments/assets/3c911256-c967-4c21-ada6-9057b59211da" />
 __Figure 2:__ Block diagram of particle filter logic. Logic chain starts at the "Wait for LIDAR data" block.
 
 The algorithm start by waiting for LIDAR scan data as it is necessary for our ```update_particles_with_laser()``` function to work. When the scan is received, check if a particle cloud has been generated. If not, we generate one and wait for new data. Otherwise the program continues by checking if the robot moved enough for new data to be useful (scanning the same space repeatedly provides no additional information in our system). If the robot moved enough, we call update particles with odometry. This function allows for each particle to undergo the same change as the robot. 
