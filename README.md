@@ -72,7 +72,7 @@ While our choice to use C++ provided us with runtime optimization, our implement
 
 ### Additional Documentation
 <!-- say where bag files are attached here-->
-
+Refer to README in bags folder.
 
 
 
