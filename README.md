@@ -14,6 +14,9 @@ Our primary particle filter logic is held in pf.cpp and the corresponding header
 Our code communicates with the robot and with visualization tools using ROS topics. The particle filter code itself is a ROS node, and it subscribes to the laser scan topic published by the robot. Whenever it updates the position estimate, it publishes that estimate to the transform `/tf` topic. It also publishes the particle cloud of pose guesses for debugging purposes. This topic, as well as the provided map, are displayed using the rviz2 ROS visualization tool. Rviz can also be used to publish an initial guess for the robot's position, so the convergence of the robot can be tested without needing large amounts of particles on larger maps. Separately, a teleoperation ROS node publishes move commands to the `/cmd_vel` topic, letting the robot drive around to gather more data about its environment. 
 <!-- insert here figure of pubs and subs -->
 
+<img width="1492" height="364" alt="pub_sub_graph" src="https://github.com/user-attachments/assets/5ba03b2f-5455-40b5-8289-c8facf4a5d4e" />
+
+
 Within pf.cpp, we had a class called ParticleFilter which contained the fundamental operations for the particle filter implementation. 
 
 <!-- image of steps taken in run loop (the flow)-->
