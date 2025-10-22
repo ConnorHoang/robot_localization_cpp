@@ -2,16 +2,14 @@
 CompRobo 2025 - Connor Hoang, Franklin Noble
 
 ### Overview
-The goal of this project was to create a localization algorithm using only LIDAR and odometry, when provided an accurate map of the space, to determine a pose estimate of a robot's position.
-
-To do this, we implemented a particle filter in C++ using ROS2 middleware. We were ultimately able to create a particle filter that converges reasonably well.
+We implemented a particle filter localization algorithm in C++ using ROS2. Given LIDAR data, odometry, and a map, the filter generates a pose estimatation and converges reasonably well.
 
 ### Overall Code Structure
 <!--(design decisions), system architecture-->
 <!--Which files, explain c++...-->
-Our primary particle filter logic is held in pf.cpp and the corresponding header file pf.hpp. We also have angle_helpers, helper_functions, and occupancy_field as files with functionality we use in pf.cpp related to their name.
+Our primary particle filter logic is in pf.cpp and pf.hpp, with additional functionality in angle_helpers, helper_functions, and occupancy_field.
 
-Our code communicates with the robot and with visualization tools using ROS topics. The particle filter code itself is a ROS node, and it subscribes to the laser scan topic published by the robot. Whenever it updates the position estimate, it publishes that estimate to the transform `/tf` topic. It also publishes the particle cloud of pose guesses for debugging purposes. This topic, as well as the provided map, are displayed using the rviz2 ROS visualization tool. Rviz can also be used to publish an initial guess for the robot's position, so the convergence of the robot can be tested without needing a large volume of updates, particuarly on larger maps. Separately, we used a teleoperation ROS node to publish move commands to the `/cmd_vel` topic, letting the robot drive around to gather more data about its environment. This teleop setup could be replaced with a different routine (i.e. bag file) and the particle filter could still acheive convergence.
+Our code communicates with the robot and with visualization tools using ROS topics. The particle filter code itself is a ROS node, and it subscribes to the laser scan topic published by the robot. Whenever it updates the position estimate, it publishes that estimate to the transform `/tf` topic. It also publishes the particle cloud of pose guesses for debugging purposes. This topic, as well as the provided map, are displayed using the rviz2 ROS visualization tool. Rviz can also be used to publish an initial guess for the robot's position, so the convergence of the robot can be tested without needing a large volume of updates, particularly on larger maps. Separately, we used a teleoperation ROS node to publish move commands to the `/cmd_vel` topic, letting the robot drive around to gather more data about its environment. This teleop setup could be replaced with a different routine (i.e. bag file) and the particle filter could still achieve convergence.
 <!-- insert here figure of pubs and subs -->
 
 <img width="1492" height="364" alt="pub_sub_graph" src="https://github.com/user-attachments/assets/5ba03b2f-5455-40b5-8289-c8facf4a5d4e" />
@@ -39,7 +37,7 @@ Next, we reweigh by updating the particles with the laser data. For each particl
 ![projection visualizer](media/comprobo_pf_projection_diagram(v3).png)
 **Figure 3:** Visual showing example of how angle information is used when projecting from each particle. Similar sized green lines indicate simply using closest distance from particle to object as a weight does not account for angle. Conversely, the projected closest distances and and differing closest distances from the projected points do seem to be affected by angle.
 
-Finally, the particle filter resamples particles to cluster in areas of the map with greater likelihoods of the robot's presence. By replacing the lowest-weighted 25% of particles and distributing 80% of those replaced particles near the particles with the highest weights, convergence on the most likely areas is encouraged. The remaining 5% of particles being randomly generated provides a means to escape undesirable (inaccurate) local minima. All percentage values were tuned to an arbitrarily sufficient level.
+Finally, the particle filter resamples particles to cluster in areas of the map with greater likelihoods of the robot's presence. By replacing the lowest-weighted 25% of particles and distributing 20% of those replaced particles near the particles with the highest weights, convergence on the most likely areas is encouraged. The remaining 5% of particles being randomly generated provides a means to escape undesirable (inaccurate) local minima. All percentage values were tuned to an arbitrarily sufficient level.
 
 #### Initialize Particles
 initialize_particle_cloud(): Finds the bounding box of the map. Next, if given a pose estimate it randomly generates particles using a normal distribution around that estimate. Otherwise, it generates particles within the map bounds with uniform randomness in valid locations until the desired number of particles is reached.
