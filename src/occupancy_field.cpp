@@ -81,8 +81,17 @@ OccupancyField::OccupancyField(std::shared_ptr<rclcpp::Node> node) {
   RCLCPP_DEBUG_STREAM(node->get_logger(), "occupancy field ready");
 };
 
-std::array<double, 4> OccupancyField::get_obstacle_bounding_box() {
-  unsigned int x_min = UINT8_MAX, x_max = 0, y_min = UINT8_MAX, y_max = 0;
+std::array<double, 4> OccupancyField::get_obstacle_bounding_box(unsigned int unit_val_max, bool customBounds, 
+  unsigned int custom_x_max, unsigned int custom_y_max) {
+  xmin = UINT16_MAX; xmax = 0; ymin = UINT16_MAX; ymax = 0;
+  
+  switch(customBounds) {
+    case false:
+      unsigned int x_min = UINT16_MAX, x_max = 0, y_min = UINT16_MAX, y_max = 0;
+    case true:
+      unsigned int x_min = UINT16_MAX, x_max = 0, y_min = UINT16_MAX, y_max = 0;
+  }
+
   for (unsigned int i = 0; i < this->occupied_coordinates.cols(); i++) {
     if (this->occupied_coordinates(0, i) < x_min) {
       x_min = this->occupied_coordinates(0, i);

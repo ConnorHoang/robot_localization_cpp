@@ -28,8 +28,17 @@ public:
    * Returns: the upper and lower bounds of x and y such that the resultant
    * bounding box contains all of the obstacles in the map.  The format of
    * the return value is ((x_lower, x_upper), (y_lower, y_upper))
+   * 
+   * If customBounds is true, the bounding box will be limited to the specified custom_x_max=530 and custom_y_max=1433 values which 
+   * are approximately the dimensions of Olin college's MAC as kept in the bag files under the maps folder.
+   * 
+   * @param unit_val_max The maximum occupancy value to consider a cell occupied (default 16)
+   * @param customBounds Whether to use custom bounding box limits (default false)
+   * @param custom_x_max The custom maximum x value for the bounding box (default 530)
+   * @param custom_y_max The custom maximum y value for the bounding box (default 1433)
    */
-  std::array<double, 4> get_obstacle_bounding_box();
+  std::array<double, 4> get_obstacle_bounding_box(unsigned int unit_val_max=16, bool customBounds=false, 
+    unsigned int custom_x_max=530, unsigned int custom_y_max=1433);
 
   /**
    * Compute the closest obstacle to the specified (x,y) coordinate in
