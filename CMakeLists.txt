@@ -18,6 +18,7 @@ find_package(nav2_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(angles REQUIRED)
 
 add_executable(pf src/pf.cpp src/helper_functions.cpp src/occupancy_field.cpp src/angle_helpers.cpp)
 ament_target_dependencies(pf rclcpp)
@@ -26,6 +27,7 @@ ament_target_dependencies(pf sensor_msgs)
 ament_target_dependencies(pf nav2_msgs)
 ament_target_dependencies(pf tf2_ros)
 ament_target_dependencies(pf tf2)
+ament_target_dependencies(pf angles)
 
 install(TARGETS
   pf

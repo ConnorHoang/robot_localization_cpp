@@ -1,6 +1,7 @@
 #ifndef PF_HPP
 #define PF_HPP
 
+#include <geometry_msgs/msg/detail/pose__struct.hpp>
 #define _USE_MATH_DEFINES
 
 #include <cmath>
@@ -104,6 +105,10 @@ private:
    */
   void run_loop();
  
+  /**
+   * Determine if the robot has moved far enough (based on translation and
+   * angular thresholds) to perform an update
+   */
   bool moved_far_enough_to_update(std::vector<float> new_odom_xy_theta);
 
   /**
@@ -125,7 +130,7 @@ private:
   /**
    * Resample the particles according to the new particle weights.
    * The weights stored with each particle should define the probability that
-   * a particular particle is selected in the resampling step.  You may want
+   * a particular particle is selected in the resampling step. You may want
    * to make use of the given helper function draw_random_sample in
    * helper_functions.py.
    */
@@ -157,11 +162,31 @@ private:
   void initialize_particle_cloud(
       std::optional<std::vector<float>> xy_theta = std::nullopt);
 
+  /**
+   * Divide the weights of all the particles such that all the weights add up to one
+   */
   void normalize_particles();
 
   void publish_particles(rclcpp::Time timestamp);
 
   void scan_received(sensor_msgs::msg::LaserScan msg);
+
+  /**
+   * Generate a random particle within the bounds of the map, and not within an object
+   */
+  Particle random_particle();
+  
+  /**
+   * for each particle in particles, determine if in map bounds or in object. If NOT,
+   * do nothing, if YES, replace that particle with a new random particle. 
+   */
+  void check_particles_inbounds();
+
+  /**
+   * Callback function for dynamic parameter updates.
+   */
+  rcl_interfaces::msg::SetParametersResult on_parameters_changed(
+      const std::vector<rclcpp::Parameter> & parameters);
 
 private:
   std::string base_frame;
@@ -169,8 +194,21 @@ private:
   std::string odom_frame;
   std::string scan_topic;
   int n_particles;
-  float d_thresh;
-  float a_thresh;
+  double d_thresh;
+  double a_thresh;
+
+  // Ros params
+  double laser_sigma_;
+  double truncation_percentage_;
+  double random_percentage_;
+  double resample_noise_x_stddev_;
+  double resample_noise_y_stddev_;
+  double resample_noise_theta_stddev_;
+
+  // MAC testing flag
+  bool MAC_testing;
+
+  rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
   rclcpp::Publisher<nav2_msgs::msg::ParticleCloud>::SharedPtr particle_pub;
   std::optional<builtin_interfaces::msg::Time> last_scan_timestamp;
   std::optional<sensor_msgs::msg::LaserScan> scan_to_process;
@@ -182,6 +220,11 @@ private:
   rclcpp::TimerBase::SharedPtr timer;
   std::shared_ptr<OccupancyField> occupancy_field;
   std::shared_ptr<TFHelper> transform_helper_;
+
+  std::mt19937 random_generator_; // random number engine
+  std::uniform_real_distribution<float> uniform_distribution_; // distribution of randomness
+
 };
+
 
 #endif
