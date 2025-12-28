@@ -27,9 +27,14 @@ public:
   /**
    * Returns: the upper and lower bounds of x and y such that the resultant
    * bounding box contains all of the obstacles in the map.  The format of
-   * the return value is ((x_lower, x_upper), (y_lower, y_upper))
-   */
-  std::array<double, 4> get_obstacle_bounding_box();
+   * the return value is ((x_lower, x_upper), (y_lower, y_upper)). 
+   * May pass in specific values if known as x_min_arg and y_min_arg to minimize compute time.
+  */
+  std::array<double, 4> get_obstacle_bounding_box(
+      unsigned int x_min_arg = UINT16_MAX,
+      unsigned int y_min_arg = UINT16_MAX
+  );
+
 
   /**
    * Compute the closest obstacle to the specified (x,y) coordinate in
